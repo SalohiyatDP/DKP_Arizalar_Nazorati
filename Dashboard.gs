@@ -442,6 +442,9 @@ var Dashboard = (function () {
         totalAmountFmt: Utils.formatMoney(fin.summary.totalAmount, true),
         totalDebt: fin.summary.totalDebt,
         totalDebtFmt: Utils.formatMoney(fin.summary.totalDebt, true),
+        waitingAmount: fin.summary.waitingAmount,
+        waitingAmountFmt: Utils.formatMoney(fin.summary.waitingAmount, true),
+        waitingCount: fin.summary.waitingCount,
         collectionRate: fin.summary.collectionRate
       },
       charts: {
@@ -475,7 +478,8 @@ var Dashboard = (function () {
         monthly: fin.monthly,
         byDistrict: fin.byDistrict.slice(0, 200),
         byEngineer: fin.byEngineer.slice(0, 1000),
-        byRegistrator: fin.byRegistrator.slice(0, 1000)
+        byRegistrator: fin.byRegistrator.slice(0, 1000),
+        pending: fin.pending.slice(0, 3000)
       },
       recentActivities: _recentActivities(viewRows),
       summaryTable: _buildSummaryTable(roleRows)

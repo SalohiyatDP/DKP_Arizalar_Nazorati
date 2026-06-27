@@ -410,6 +410,8 @@ var BusinessLogic = (function () {
 
   /**
    * To'lov holati va qarz summasini hisoblaydi.
+   * MUHIM: "Oxirgi jarayon nomi" = "To'lov kutilmoqda" bo'lsa — bu ariza
+   * to'lanishi lozim (kutilayotgan) deb belgilanadi (to'liq to'langanlar bundan mustasno).
    * @param {Object} row
    * @returns {{paymentStatus: string, debtAmount: number}}
    */
@@ -418,12 +420,21 @@ var BusinessLogic = (function () {
     var paid = Utils.toNumber(row.paidAmount);
     var debt = Math.max(0, amount - paid);
 
+    // Jarayon bosqichi to'lov kutilayotganini bildiradimi?
+    var stage = Utils.normalize(row.lastProcessName || '')
+      .replace(/['\u02bb\u02bc`\u2019\u2018]/g, '');
+    var stageWaiting = stage.indexOf('tolov kutilmoqda') !== -1 ||
+      stage.indexOf('tulov kutilmoqda') !== -1 ||
+      (stage.indexOf('tolov') !== -1 && stage.indexOf('kutil') !== -1);
+
     var explicit = Utils.normalize(row.paymentStatusRaw || row.paymentStatus);
     var ps;
-    if (explicit.indexOf("to'la") !== -1 || explicit.indexOf('paid') !== -1 ||
+    if (amount > 0 && paid >= amount) {
+      ps = PAYMENT_STATUS.PAID;                 // to'liq to'langan
+    } else if (stageWaiting) {
+      ps = PAYMENT_STATUS.WAITING;              // jarayon: to'lov kutilmoqda
+    } else if (explicit.indexOf("to'la") !== -1 || explicit.indexOf('paid') !== -1 ||
         explicit.indexOf('to`la') !== -1 || explicit.indexOf('tolangan') !== -1) {
-      ps = PAYMENT_STATUS.PAID;
-    } else if (amount > 0 && paid >= amount) {
       ps = PAYMENT_STATUS.PAID;
     } else if (paid > 0 && paid < amount) {
       ps = PAYMENT_STATUS.PARTIAL;
