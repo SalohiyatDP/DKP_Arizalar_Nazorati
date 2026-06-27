@@ -146,8 +146,13 @@ var Import = (function () {
 
       // 7. FINANCE
       _step(report, 'Finance', 'RUNNING');
-      Finance.rebuild(enriched);
-      _step(report, 'Finance', 'OK');
+      var fin = Finance.rebuild(enriched);
+      report.totalAmount = fin.summary.totalAmount;
+      report.totalPaid = fin.summary.totalPaid;
+      report.totalDebt = fin.summary.totalDebt;
+      _step(report, 'Finance', 'OK',
+        'Jami summa: ' + Utils.formatMoney(fin.summary.totalAmount, true) +
+        ' · To\'langan: ' + Utils.formatMoney(fin.summary.totalPaid, true));
 
       // 8. CACHE (eski keshni tozalash, yangisini isitish)
       _step(report, 'Cache', 'RUNNING');
