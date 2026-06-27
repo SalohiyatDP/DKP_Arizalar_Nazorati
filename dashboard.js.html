@@ -695,7 +695,7 @@ FinanceUI.render = function () {
   document.getElementById('finCount').textContent =
     'Jami: ' + (list ? list.length : 0) + ' ta ' + label.toLowerCase();
   FinanceUI._renderTable(list, label);
-  FinanceUI._renderPending(fin.pending);
+  FinanceUI._renderPending(fin.pending, by);
 };
 
 FinanceUI._money = function (v) { return Number(v || 0).toLocaleString('ru-RU'); };
@@ -711,24 +711,45 @@ FinanceUI._renderTable = function (list, label) {
   Grid.render('financeRegionTable', columns, rows, { exportName: 'moliya' });
 };
 
-/** To'lov jarayonidagi (kutilayotgan) arizalar — ariza egasiga qo'ng'iroq qilish uchun. */
-FinanceUI._renderPending = function (list) {
+/**
+ * To'lov jarayonidagi (kutilayotgan) arizalar — ariza egasiga qo'ng'iroq qilish uchun.
+ * Guruhlashga qarab:
+ *   - registrator kesimi  -> faqat REGISTRATSIYA to'lovi kutilayotgan arizalar;
+ *   - muhandis kesimi      -> faqat KADASTR+MANZIL to'lovi kutilayotgan arizalar;
+ *   - tuman (standart)     -> barcha kutilayotgan arizalar (umumiy summa).
+ */
+FinanceUI._renderPending = function (list, by) {
   list = list || [];
+  var isReg = by === 'registrator';
+  var isEng = by === 'engineer';
+  var respLabel = isReg ? 'Registrator' : 'Muhandis';
+
+  var filtered = list.filter(function (p) {
+    if (isReg) return (p.registratorPending || 0) > 0;
+    if (isEng) return (p.engineerPending || 0) > 0;
+    return true;
+  });
+
   var cnt = document.getElementById('pendingCount');
-  if (cnt) cnt.textContent = 'To\'lov kutilayotgan ' + list.length + ' ta ariza — qo\'ng\'iroq ro\'yxati';
+  if (cnt) cnt.textContent = 'To\'lov kutilayotgan ' + filtered.length + ' ta ariza — qo\'ng\'iroq ro\'yxati' +
+    (isReg ? ' (registratsiya to\'lovi)' : isEng ? ' (kadastr + manzil to\'lovi)' : '');
+
   var columns = [
-    { label: 'Tranzaksiya' }, { label: 'Mulkdor / Mijoz' },
-    { label: 'Telefon', html: true }, { label: 'Tuman' }, { label: 'Muhandis' },
+    { label: 'Tranzaksiya' }, { label: 'Kadastr raqami' }, { label: 'Ariza manbasi' },
+    { label: 'Buyurtmachi' }, { label: 'Mulkdor' },
+    { label: 'Telefon', html: true }, { label: 'Tuman' }, { label: respLabel },
     { label: 'To\'lanishi lozim (so\'m)' }, { label: 'Muddat' }
   ];
-  var rows = list.map(function (p) {
-    var name = p.owner || p.customer || '—';
+  var rows = filtered.map(function (p) {
     var phone = String(p.phone || '').trim();
     var tel = phone ? '<a href="tel:' + esc(phone.replace(/[^0-9+]/g, '')) + '">' +
       '<span class="material-icons" style="font-size:15px;vertical-align:middle">call</span> ' + esc(phone) + '</a>' : '—';
+    var resp = isReg ? (p.registrator || '—') : (p.engineer || '—');
+    var amt = isReg ? p.registratorPending : isEng ? p.engineerPending : p.pendingAmount;
     return [
-      p.transactionNo || p.applicationNo || p.cadastreNo, name, tel,
-      p.district, p.engineer, FinanceUI._money(p.pendingAmount), p.deadlineDate || '—'
+      p.transactionNo || p.applicationNo, p.cadastreNo || '—', p.applicationSource || '—',
+      p.customer || '—', p.owner || '—', tel,
+      p.district, resp, FinanceUI._money(amt), p.deadlineDate || '—'
     ];
   });
   Grid.render('pendingTable', columns, rows, { exportName: 'tolov_jarayonida' });

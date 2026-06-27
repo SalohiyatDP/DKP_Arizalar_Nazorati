@@ -46,10 +46,15 @@ var Finance = (function () {
         waitingCount++;
         waitingAmount += pendAmt;
         if (pending.length < 5000) {
+          var amtCadP = Utils.toNumber(r.amountCadastre), amtAddrP = Utils.toNumber(r.amountAddr);
+          var pdCadP = Utils.toNumber(r.paidCadastre), pdAddrP = Utils.toNumber(r.paidAddr);
+          var engPend = Math.max(0, (amtCadP + amtAddrP) - (pdCadP + pdAddrP));
+          var regPend = Math.max(0, Utils.toNumber(r.amountReg) - Utils.toNumber(r.paidReg));
           pending.push({
             transactionNo: Utils.str(r.transactionNo),
             applicationNo: Utils.str(r.applicationNo),
             cadastreNo: Utils.str(r.cadastreNo),
+            applicationSource: Utils.str(r.applicationSource),
             customer: Utils.str(r.customer),
             owner: Utils.str(r.owner),
             phone: Utils.str(r.phone),
@@ -60,6 +65,8 @@ var Finance = (function () {
             amount: amount,
             paid: paid,
             pendingAmount: pendAmt,
+            engineerPending: engPend,
+            registratorPending: regPend,
             registerDate: Utils.formatDate(r.registerDate),
             deadlineDate: Utils.formatDate(r.deadlineDate)
           });
