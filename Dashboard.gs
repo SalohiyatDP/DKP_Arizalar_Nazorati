@@ -59,7 +59,6 @@ var Dashboard = (function () {
       status: Utils.str(r.status),
       deadlineStatus: Utils.str(r.deadlineStatus),
       remainingDays: Utils.toNumber(r.remainingDays),
-      slaPercent: Utils.toNumber(r.slaPercent),
       progressPercent: Utils.toNumber(r.progressPercent),
       colorStatus: Utils.str(r.colorStatus),
       amount: Utils.toNumber(r.amount),
@@ -234,7 +233,6 @@ var Dashboard = (function () {
       deadlineStatus: r.deadlineStatus,
       deadlineStatusLabel: DEADLINE_STATUS_LABEL[r.deadlineStatus] || '',
       remainingDays: r.remainingDays,
-      slaPercent: r.slaPercent,
       progressPercent: r.progressPercent,
       colorStatus: r.colorStatus,
       colorHex: COLOR_HEX[r.colorStatus] || '#9e9e9e',
@@ -342,7 +340,6 @@ var Dashboard = (function () {
         residential: stats.summary.residential,
         nonResidential: stats.summary.nonResidential,
         completionRate: stats.summary.completionRate,
-        avgSla: stats.summary.avgSla,
         monthlyIncome: fin.summary.monthlyIncome,
         monthlyIncomeFmt: Utils.formatMoney(fin.summary.monthlyIncome, true),
         totalPaid: fin.summary.totalPaid,
@@ -403,7 +400,7 @@ var Dashboard = (function () {
     });
     return sorted.slice(0, 15).map(function (r) {
       return {
-        applicationNo: r.applicationNo || r.transactionNo || r.cadastreNo,
+        applicationNo: r.transactionNo || r.applicationNo || r.cadastreNo,
         customer: r.customer,
         engineer: r.engineer,
         district: r.district,
@@ -441,7 +438,6 @@ var Dashboard = (function () {
         ['Turar joy', s.residential],
         ['Noturar joy', s.nonResidential],
         ['Bajarilish foizi (%)', s.completionRate],
-        ['O\'rtacha SLA (%)', s.avgSla],
         ['', ''],
         ['Jami summa', Utils.formatMoney(fin.summary.totalAmount, true)],
         ['Yig\'ilgan to\'lov', Utils.formatMoney(fin.summary.totalPaid, true)],

@@ -150,11 +150,10 @@ var Reports = (function () {
   function _performance(rows) {
     var stats = Statistics.compute(rows);
     var data = stats.engineerRanking.map(function (e) {
-      return [e.rank, e.name, e.total, e.completed, e.completionRate + '%',
-        e.avgSla + '%', e.score];
+      return [e.rank, e.name, e.total, e.completed, e.completionRate + '%', e.score];
     });
     return _report('Samaradorlik hisoboti',
-      ['O\'rin', 'Muhandis', 'Jami', 'Bajarilgan', 'Bajarilish %', 'SLA %', 'Ball'],
+      ['O\'rin', 'Muhandis', 'Jami', 'Bajarilgan', 'Bajarilish %', 'Ball'],
       data);
   }
 

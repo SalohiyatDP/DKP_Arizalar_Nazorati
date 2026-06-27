@@ -77,7 +77,6 @@ Dash._renderKpis = function (w) {
     { label: 'Turar joy', value: w.residential, icon: 'home', color: 'var(--md-primary)' },
     { label: 'Noturar joy', value: w.nonResidential, icon: 'business', color: 'var(--md-secondary)' },
     { label: 'Bajarilish', value: w.completionRate + '%', icon: 'task_alt', color: 'var(--md-success)' },
-    { label: 'O\'rtacha SLA', value: w.avgSla + '%', icon: 'speed', color: 'var(--md-primary)' },
     { label: 'Joriy oy daromadi', value: w.monthlyIncomeFmt, icon: 'payments', color: 'var(--md-success)' },
     { label: 'Yig\'ilgan to\'lov', value: w.totalPaidFmt, icon: 'account_balance_wallet', color: 'var(--md-primary)' }
   ];
@@ -96,10 +95,10 @@ Dash._renderTopEngineers = function (list) {
   var rows = list.map(function (e) {
     return '<tr><td>' + e.rank + '</td><td>' + esc(e.name) + '</td><td>' + e.total +
       '</td><td>' + e.completionRate + '%</td><td><span class="badge" style="background:' +
-      (e.avgSla >= 90 ? 'var(--md-success)' : e.avgSla >= 70 ? 'var(--md-warning)' : 'var(--md-danger)') +
-      '">' + e.avgSla + '%</span></td></tr>';
+      (e.expired === 0 ? 'var(--md-success)' : e.expired <= 5 ? 'var(--md-warning)' : 'var(--md-danger)') +
+      '">' + e.expired + '</span></td></tr>';
   }).join('');
-  t.innerHTML = '<thead><tr><th>#</th><th>Muhandis</th><th>Jami</th><th>Bajarilish</th><th>SLA</th></tr></thead><tbody>' + rows + '</tbody>';
+  t.innerHTML = '<thead><tr><th>#</th><th>Muhandis</th><th>Jami</th><th>Bajarilish</th><th>Muddati o\'tgan</th></tr></thead><tbody>' + rows + '</tbody>';
 };
 
 /* -------------------------- SO'NGGI FAOLLIK -------------------------- */
@@ -272,10 +271,10 @@ Apps._render = function (res) {
     document.getElementById('appsPagination').innerHTML = '';
     return;
   }
-  t.querySelector('thead').innerHTML = '<tr><th>Ariza</th><th>Mijoz</th><th>Muhandis</th>' +
+  t.querySelector('thead').innerHTML = '<tr><th>Tranzaksiya</th><th>Mijoz</th><th>Muhandis</th>' +
     '<th>Tuman</th><th>Tur</th><th>Muddat</th><th>Holat</th><th>Summa</th><th>To\'lov</th><th></th></tr>';
   t.querySelector('tbody').innerHTML = res.rows.map(function (r) {
-    return '<tr><td><strong>' + esc(r.applicationNo || r.cadastreNo || r.transactionNo) + '</strong></td>' +
+    return '<tr><td><strong>' + esc(r.transactionNo || r.applicationNo || r.cadastreNo) + '</strong></td>' +
       '<td>' + esc(r.customer) + '</td><td>' + esc(r.engineer) + '</td><td>' + esc(r.district) + '</td>' +
       '<td>' + esc(r.residencyLabel) + '</td><td>' + esc(r.deadlineDate) + '</td>' +
       '<td><span class="badge" style="background:' + r.colorHex + '">' + esc(r.deadlineStatusLabel) + '</span></td>' +

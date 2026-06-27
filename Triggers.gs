@@ -108,7 +108,6 @@ function _recalculateDeadlines(rows) {
     r.deadlineStatus = ds.deadlineStatus;
     r.remainingDays = ds.remainingDays;
     r.colorStatus = ds.colorStatus;
-    r.slaPercent = BusinessLogic.computeSla(ctx, today);
     r.progressPercent = BusinessLogic.computeProgress(ctx, today);
     r.updatedAt = Utils.nowIso();
     return r;

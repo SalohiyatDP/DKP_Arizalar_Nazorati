@@ -218,29 +218,6 @@ var BusinessLogic = (function () {
   }
 
   /**
-   * SLA foizini hisoblaydi (muddat ichida bajarilganmi).
-   * Bajarilgan arizalar uchun: bajarilish sanasi muddatdan oldinmi.
-   * Jarayondagilar uchun: hozircha muddat ichidami.
-   * @param {Object} row
-   * @param {Date} [today]
-   * @returns {number} 0..100
-   */
-  function computeSla(row, today) {
-    var deadline = Utils.toDate(row.deadlineDate);
-    if (!deadline) return 100;
-    var status = row.status;
-
-    if (status === APP_STATUS.COMPLETED) {
-      var complete = Utils.toDate(row.completeDate);
-      if (!complete) return 100;
-      return complete.getTime() <= deadline.getTime() ? 100 : 0;
-    }
-    // Jarayonda — muddat o'tmagan bo'lsa SLA hali saqlanmoqda.
-    var remaining = BusinessCalendar.remainingWorkingDays(deadline, today || new Date());
-    return remaining >= 0 ? 100 : 0;
-  }
-
-  /**
    * Progress foizini hisoblaydi (muddatning qancha qismi sarflandi).
    * @param {Object} row
    * @param {Date} [today]
@@ -345,7 +322,6 @@ var BusinessLogic = (function () {
     rec.remainingDays = ds.remainingDays;
     rec.colorStatus = ds.colorStatus;
 
-    rec.slaPercent = computeSla(raw, today);
     rec.progressPercent = computeProgress(raw, today);
 
     // Moliya — to'lov uchta qismdan iborat (Kadastr + Registratsiya + Manzil).
@@ -403,7 +379,6 @@ var BusinessLogic = (function () {
     classifyResidency: classifyResidency,
     computeDeadline: computeDeadline,
     computeDeadlineStatus: computeDeadlineStatus,
-    computeSla: computeSla,
     computeProgress: computeProgress,
     computePayment: computePayment,
     enrichRow: enrichRow,

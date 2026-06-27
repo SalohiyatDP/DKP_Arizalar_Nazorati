@@ -16,7 +16,7 @@ Asosiy maqsad — kadastr arizalarini quyidagi kesimlarda nazorat qilish va tahl
 - Ish kunlari bo'yicha muddat (deadline) hisoblash (shanba, yakshanba va bayramlarsiz)
 - Oylik to'langan va kutilayotgan to'lov summalari
 - Muhandis, tuman va viloyat samaradorligi
-- SLA monitoringi, reyting va moliyaviy dashboard
+- Reyting va moliyaviy dashboard, muddat nazorati
 
 ---
 
@@ -252,7 +252,7 @@ Xato yuz bersa, **DATA** varag'i avtomatik ravishda **BACKUP**'dan tiklanadi (ro
 Administrator `SETTINGS` varag'idan quyidagilarni o'zgartirishi mumkin:
 
 `APP_NAME`, `ORGANIZATION`, `SESSION_TTL_MIN`, `PAGE_SIZE`, `CACHE_TTL_SEC`,
-`SLA_WARN_DAYS`, `DEFAULT_DEADLINE_DAYS`, `PASSWORD_MIN_LENGTH`,
+`DEFAULT_DEADLINE_DAYS`, `PASSWORD_MIN_LENGTH`,
 `MAX_LOGIN_ATTEMPTS`, `NOTIFY_EMAIL_ENABLED`, `NOTIFY_ADMIN_EMAIL`, `DARK_MODE_DEFAULT`
 
 ---

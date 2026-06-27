@@ -35,7 +35,6 @@ var Statistics = (function () {
       partial: 0,
       waiting: 0,
       unpaid: 0,
-      slaSum: 0,
       progressSum: 0
     };
   }
@@ -77,7 +76,6 @@ var Statistics = (function () {
         default: acc.unpaid++; break;
       }
 
-      acc.slaSum += Utils.toNumber(r.slaPercent);
       acc.progressSum += Utils.toNumber(r.progressPercent);
 
       _bump(byEngineer, r.engineer || 'Noma\'lum', r);
@@ -112,7 +110,6 @@ var Statistics = (function () {
         unpaid: acc.unpaid,
         completionRate: Utils.percentOf(acc.completed, acc.total),
         expiredRate: Utils.percentOf(acc.expired, acc.total),
-        avgSla: Math.round(Utils.safeDivide(acc.slaSum, acc.total) * 10) / 10,
         avgProgress: Math.round(Utils.safeDivide(acc.progressSum, acc.total) * 10) / 10
       },
       engineerRanking: _ranking(byEngineer),
@@ -131,13 +128,12 @@ var Statistics = (function () {
    */
   function _bump(map, key, r) {
     if (!map[key]) {
-      map[key] = { name: key, total: 0, completed: 0, expired: 0, sla: 0, amount: 0, paid: 0 };
+      map[key] = { name: key, total: 0, completed: 0, expired: 0, amount: 0, paid: 0 };
     }
     var g = map[key];
     g.total++;
     if (r.deadlineStatus === DEADLINE_STATUS.COMPLETED) g.completed++;
     if (r.deadlineStatus === DEADLINE_STATUS.EXPIRED) g.expired++;
-    g.sla += Utils.toNumber(r.slaPercent);
     g.amount += Utils.toNumber(r.amount);
     g.paid += Utils.toNumber(r.paidAmount);
   }
@@ -158,18 +154,16 @@ var Statistics = (function () {
         completed: g.completed,
         expired: g.expired,
         completionRate: Utils.percentOf(g.completed, g.total),
-        avgSla: Math.round(Utils.safeDivide(g.sla, g.total) * 10) / 10,
         amount: g.amount,
         paid: g.paid,
         score: 0
       });
     }
-    // Reyting bali: bajarilish foizi (70%) + SLA (30%) - muddati o'tganlar jarimasi.
+    // Reyting bali: bajarilish foizi - muddati o'tganlar jarimasi.
     for (var i = 0; i < arr.length; i++) {
       var e = arr[i];
       e.score = Math.round(
-        (e.completionRate * 0.7 + e.avgSla * 0.3) -
-        (Utils.percentOf(e.expired, e.total) * 0.5)
+        e.completionRate - (Utils.percentOf(e.expired, e.total) * 0.5)
       );
     }
     arr.sort(function (a, b) { return b.score - a.score || b.total - a.total; });
@@ -212,7 +206,6 @@ var Statistics = (function () {
       rows.push(['To\'langan', s.paid]);
       rows.push(['To\'lov kutilmoqda', s.waiting]);
       rows.push(['Bajarilish foizi (%)', s.completionRate]);
-      rows.push(['O\'rtacha SLA (%)', s.avgSla]);
       rows.push(['Yangilangan', Utils.formatDateTime(new Date())]);
       sh.getRange(1, 1, rows.length, 2).setValues(rows);
     } catch (e) {
@@ -249,12 +242,12 @@ var Statistics = (function () {
         Repository.ss().insertSheet(SHEETS.MONTHLY_STATS);
         Repository.writeHeaders(SHEETS.MONTHLY_STATS, [
           'PERIOD', 'SNAPSHOT_DATE', 'TOTAL', 'COMPLETED', 'EXPIRED', 'IN_PROGRESS',
-          'PAID', 'WAITING', 'COMPLETION_RATE', 'AVG_SLA'
+          'PAID', 'WAITING', 'COMPLETION_RATE'
         ]);
       }
       Repository.appendRow(SHEETS.MONTHLY_STATS, [
         period, snapshotDate, s.total, s.completed, s.expired, s.inProgress,
-        s.paid, s.waiting, s.completionRate, s.avgSla
+        s.paid, s.waiting, s.completionRate
       ]);
     } catch (e) {
       Logger.log('Statistics.saveMonthlySnapshot xato: ' + e);
@@ -275,8 +268,7 @@ var Statistics = (function () {
         total: Utils.toNumber(r.TOTAL),
         completed: Utils.toNumber(r.COMPLETED),
         expired: Utils.toNumber(r.EXPIRED),
-        completionRate: Utils.toNumber(r.COMPLETION_RATE),
-        avgSla: Utils.toNumber(r.AVG_SLA)
+        completionRate: Utils.toNumber(r.COMPLETION_RATE)
       };
     });
   }

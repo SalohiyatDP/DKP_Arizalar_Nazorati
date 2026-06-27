@@ -306,7 +306,7 @@ App.onSearchInput = function (term) {
         box.innerHTML = rows.map(function (r) {
           return '<div class="dropdown-item" onclick="Apps.showDetail(\'' +
             esc(r.rowId) + '\')"><div><strong>' +
-            esc(r.applicationNo || r.cadastreNo || r.transactionNo) +
+            esc(r.transactionNo || r.applicationNo || r.cadastreNo) +
             '</strong><br><small>' + esc(r.customer) + ' · ' + esc(r.district) +
             '</small></div></div>';
         }).join('');

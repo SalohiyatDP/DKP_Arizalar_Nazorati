@@ -74,7 +74,7 @@ var DATA_COLUMNS = [
   'rowId', 'applicationNo', 'transactionNo', 'cadastreNo', 'customer', 'pnfl', 'tin',
   'region', 'district', 'engineer', 'applicationType', 'objectType', 'serviceCode',
   'residency', 'area', 'registerDate', 'deadlineDate', 'completeDate', 'status',
-  'deadlineStatus', 'remainingDays', 'slaPercent', 'progressPercent', 'colorStatus',
+  'deadlineStatus', 'remainingDays', 'progressPercent', 'colorStatus',
   'amount', 'paidAmount', 'debtAmount', 'paymentStatus', 'paymentDate', 'note',
   'year', 'month', 'importBatch', 'updatedAt'
 ];

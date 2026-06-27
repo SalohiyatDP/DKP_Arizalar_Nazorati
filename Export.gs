@@ -13,8 +13,8 @@ var Export = (function () {
 
   /** Eksport uchun ustunlar va sarlavhalar (o'zbekcha). */
   var EXPORT_HEADERS = [
-    { key: 'applicationNo', label: 'Ariza raqami' },
     { key: 'transactionNo', label: 'Tranzaksiya raqami' },
+    { key: 'applicationNo', label: 'Ariza raqami' },
     { key: 'cadastreNo', label: 'Kadastr raqami' },
     { key: 'customer', label: 'Mijoz' },
     { key: 'pnfl', label: 'JSHSHIR' },
@@ -30,7 +30,6 @@ var Export = (function () {
     { key: 'completeDate', label: 'Bajarilgan sana' },
     { key: 'deadlineStatusLabel', label: 'Muddat holati' },
     { key: 'remainingDays', label: 'Qolgan kun' },
-    { key: 'slaPercent', label: 'SLA %' },
     { key: 'amount', label: 'Summa' },
     { key: 'paidAmount', label: 'To\'langan' },
     { key: 'debtAmount', label: 'Qarz' },

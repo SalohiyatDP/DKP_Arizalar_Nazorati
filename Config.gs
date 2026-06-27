@@ -22,7 +22,6 @@
  * @property {number} pageSize       Standart sahifalash hajmi
  * @property {number} cacheTtlSec    Kesh muddati (soniya)
  * @property {number} maxImportRows  Bitta importdagi maksimal qatorlar
- * @property {number} slaWarnDays    SLA ogohlantirish kunlari
  */
 
 /** Tizimning standart konfiguratsiyasi (o'zgartirib bo'lmaydigan poydevor). */
@@ -54,8 +53,7 @@ var DEFAULT_CONFIG = {
   importChunkSize: 5000,
   maxImportRows: 200000,
 
-  // --- SLA / muddatlar ---
-  slaWarnDays: 3,                // 3 kun qolganda ogohlantirish
+  // --- Muddatlar ---
   defaultDeadlineDays: 10,       // standart ariza muddati (ish kuni)
 
   // --- Eksport ---
@@ -77,7 +75,6 @@ var SETTINGS_SCHEMA = {
   'SESSION_TTL_MIN': 'number',
   'PAGE_SIZE': 'number',
   'CACHE_TTL_SEC': 'number',
-  'SLA_WARN_DAYS': 'number',
   'DEFAULT_DEADLINE_DAYS': 'number',
   'PASSWORD_MIN_LENGTH': 'number',
   'MAX_LOGIN_ATTEMPTS': 'number',
@@ -162,7 +159,6 @@ var Config = (function () {
     if (settings.SESSION_TTL_MIN) cfg.sessionTtlMin = settings.SESSION_TTL_MIN;
     if (settings.PAGE_SIZE) cfg.pageSize = settings.PAGE_SIZE;
     if (settings.CACHE_TTL_SEC) cfg.cacheTtlSec = settings.CACHE_TTL_SEC;
-    if (settings.SLA_WARN_DAYS != null) cfg.slaWarnDays = settings.SLA_WARN_DAYS;
     if (settings.DEFAULT_DEADLINE_DAYS) cfg.defaultDeadlineDays = settings.DEFAULT_DEADLINE_DAYS;
     if (settings.PASSWORD_MIN_LENGTH) cfg.passwordMinLength = settings.PASSWORD_MIN_LENGTH;
     if (settings.MAX_LOGIN_ATTEMPTS) cfg.maxLoginAttempts = settings.MAX_LOGIN_ATTEMPTS;
