@@ -691,8 +691,17 @@ ImportUI._renderReport = function (rep) {
 
   if (rep.totalAmount != null) {
     html += '<div style="margin-top:10px; padding:8px 10px; background:var(--bg-surface-2); border-radius:6px; font-weight:600">' +
-      'Jami summa: ' + Number(rep.totalAmount).toLocaleString('ru-RU') + ' so\'m · ' +
-      'To\'langan: ' + Number(rep.totalPaid || 0).toLocaleString('ru-RU') + ' so\'m</div>';
+      'Hisoblangan: Jami summa ' + Number(rep.totalAmount).toLocaleString('ru-RU') + ' so\'m · ' +
+      'To\'langan ' + Number(rep.totalPaid || 0).toLocaleString('ru-RU') + ' so\'m</div>';
+  }
+  if (rep.readbackAmount != null) {
+    var warn = (rep.readbackAmount === 0 && rep.totalAmount > 0);
+    html += '<div style="margin-top:6px; padding:8px 10px; border-radius:6px; font-weight:600; background:' +
+      (warn ? 'var(--md-danger); color:#fff' : 'var(--bg-surface-2)') + '">' +
+      'DATA\'dan o\'qildi (dashboard ko\'radigan): ' + (rep.readbackRows || 0) + ' qator · Jami ' +
+      Number(rep.readbackAmount).toLocaleString('ru-RU') + ' so\'m · To\'langan ' +
+      Number(rep.readbackPaid || 0).toLocaleString('ru-RU') + ' so\'m' +
+      (warn ? ' ⚠️ O\'qishda 0 — muammo o\'qish yo\'lida!' : '') + '</div>';
   }
   if (rep.detectedColumns && rep.detectedColumns.length) {
     html += '<div style="margin-top:10px"><strong>Tanilgan ustunlar (' +

@@ -167,6 +167,25 @@ var Import = (function () {
       Dashboard.refreshSnapshot(enriched);
       _step(report, 'Dashboard', 'OK');
 
+      // 10. TEKSHIRUV — jonli dashboard o'qish yo'li (DATA'dan qayta o'qib + manba filtri).
+      // Bu aynan dashboard/Moliya ko'rsatadigan natija. Agar bu yerda 0 chiqsa —
+      // muammo o'qishda; agar 837M chiqsa — dashboard ham shuni ko'rsatishi kerak.
+      try {
+        var liveRows = Dashboard.loadAll();
+        var liveFin = Finance.compute(liveRows);
+        report.readbackRows = liveRows.length;
+        report.readbackAmount = liveFin.summary.totalAmount;
+        report.readbackPaid = liveFin.summary.totalPaid;
+        var filteredOut = report.validRows - liveRows.length;
+        _step(report, 'Tekshiruv', 'OK',
+          'DATA o\'qildi: ' + liveRows.length + ' qator' +
+          (filteredOut > 0 ? ' (manba filtri ' + filteredOut + ' ta arizani chiqarib tashladi!)' : '') +
+          ' · Jami summa: ' + Utils.formatMoney(liveFin.summary.totalAmount, true) +
+          ' · To\'langan: ' + Utils.formatMoney(liveFin.summary.totalPaid, true));
+      } catch (verr) {
+        _step(report, 'Tekshiruv', 'ERROR', String(verr));
+      }
+
       // Oylik snapshot (tarixiy taqqoslash uchun).
       Statistics.saveMonthlySnapshot(enriched);
 
