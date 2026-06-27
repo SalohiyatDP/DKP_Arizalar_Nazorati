@@ -18,6 +18,7 @@
 var BusinessLogic = (function () {
 
   var RULES_CACHE_KEY = 'biz::rules';
+  var DEADLINE_CFG_CACHE_KEY = 'biz::deadlineCfg';
 
   /**
    * SERVICE_RULES va AREA_RULES varaqlaridan klassifikatsiya qoidalarini o'qiydi.
@@ -140,9 +141,166 @@ var BusinessLogic = (function () {
   }
 
   /**
+   * MUDDAT_QOIDALARI varag'idagi sozlanadigan qiymatlarni {kalit: kun} xaritasi
+   * sifatida o'qiydi (keshlanadi).
+   * @returns {Object<string, number>}
+   */
+  function _loadDeadlineConfig() {
+    return Cache.remember(DEADLINE_CFG_CACHE_KEY, function () {
+      try {
+        return DeadlineSettings.getDeadlineConfigMap();
+      } catch (e) {
+        Logger.log('Deadline config o\'qish xatosi: ' + e);
+        return {};
+      }
+    }, Config.value('cacheTtlSec', 1800));
+  }
+
+  /**
+   * Matnni taqqoslash uchun normallashtiradi (Excel "=" kabi — registrga sezgir emas;
+   * apostrof variantlari va ortiqcha bo'shliqlar birxillashtiriladi).
+   * @param {*} s
+   * @returns {string}
+   */
+  function _cmp(s) {
+    return Utils.str(s)
+      .replace(/[\u2018\u2019\u02BB\u02BC\u0060\u00B4]/g, "'")
+      .replace(/\s+/g, ' ')
+      .trim()
+      .toLowerCase();
+  }
+
+  /** s qiymati arr ro'yxatidagi biror qiymatga teng (normallashgan)mi? */
+  function _cmpIn(s, arr) {
+    var x = _cmp(s);
+    for (var i = 0; i < arr.length; i++) {
+      if (_cmp(arr[i]) === x) return true;
+    }
+    return false;
+  }
+
+  /** Qiymatni songa keltiradi; bo'sh/yaroqsiz bo'lsa fallback qaytadi. */
+  function _num(v, fallback) {
+    if (v === undefined || v === null || v === '') return fallback;
+    var n = Utils.toNumber(v);
+    return isNaN(n) ? fallback : n;
+  }
+
+  /**
+   * Config'dagi prefiksli (manba:/flag:/ariza:) kalitlardan qiymatga aniq mos
+   * keluvchisini topadi. Topilmasa null.
+   * @param {Object} cfg
+   * @param {string} prefix
+   * @param {*} value
+   * @returns {number|null}
+   */
+  function _matchPrefix(cfg, prefix, value) {
+    var x = _cmp(value);
+    if (!x) return null;
+    for (var k in cfg) {
+      if (!cfg.hasOwnProperty(k)) continue;
+      if (k.indexOf(prefix) === 0 && _cmp(k.substring(prefix.length)) === x) {
+        return _num(cfg[k], 0);
+      }
+    }
+    return null;
+  }
+
+  /**
+   * Maydon (m²) bo'yicha ish kunlari (Excel: IF(W<100,..,IF(W<=1000,..))).
+   * Chegaralar tuzilmaviy (kodda), kunlar — sozlanadigan.
+   * @param {number} w
+   * @param {Object} cfg
+   * @returns {number}
+   */
+  function _areaTierDays(w, cfg) {
+    if (w < 100) return _num(cfg['maydon:<100'], 10);
+    if (w <= 1000) return _num(cfg['maydon:<=1000'], 12);
+    if (w <= 5000) return _num(cfg['maydon:<=5000'], 17);
+    if (w <= 15000) return _num(cfg['maydon:<=15000'], 22);
+    if (w <= 50000) return _num(cfg['maydon:<=50000'], 28);
+    return _num(cfg['maydon:>50000'], 37);
+  }
+
+  /**
+   * Ariza muddatini (ish kunlari) hisoblaydi — foydalanuvchining Excel formulasi
+   * (ustun X "Аризани муддати кун") aynan JavaScriptga o'girilgan.
+   *
+   * Ustunlar mosligi (Excel -> tizim maydoni):
+   *   N -> applicationSource (Ariza manbasi)
+   *   V -> cadastrePassportType (Kadastr passport olish turi)
+   *   I -> applicationType (Ariza turi)
+   *   L -> objectType2 (Obyekt turi 2)
+   *   O -> priznak (Priznak)
+   *   W -> externalArea (Tashqi o'lchovlar bo'yicha maydon)
+   *
+   * Qiymatlar (kunlar) MUDDAT_QOIDALARI varag'idan sozlanadi.
+   * @param {Object} row
+   * @returns {number} ish kunlari soni
+   */
+  function computeDeadlineDays(row) {
+    var cfg = _loadDeadlineConfig();
+    var N = row.applicationSource;
+    var V = row.cadastrePassportType;
+    var I = row.applicationType;
+    var L = row.objectType2;
+    var O = row.priznak;
+    var W = Utils.toNumber(row.externalArea);
+
+    // 1) Ariza manbasi (Kadastr muhandisi / UZKAD ...)
+    var m = _matchPrefix(cfg, 'manba:', N);
+    if (m !== null) return m;
+
+    // 2) FREE bayrog'i (Kadastr passport olish turi)
+    var f = _matchPrefix(cfg, 'flag:', V);
+    if (f !== null) return f;
+
+    // 3) Ariza turi bo'yicha aniq qoidalar
+    var a = _matchPrefix(cfg, 'ariza:', I);
+    if (a !== null) return a;
+
+    // 4) Turar obyekt / Turar kompozit
+    if (_cmpIn(I, [
+      "Turar joy obyektning kadastr pasportini shakllantirish va davlat ro'yxatidan o'tkazish",
+      'Turar kompozit'
+    ])) {
+      if (_cmp(L) === _cmp('Turar yer maydoni')) return _num(cfg['turar:yer_maydoni'], 7);
+      return _num(cfg['turar:default'], 10);
+    }
+
+    // 5) Noturar obyekt / Noturar kompozit
+    if (_cmpIn(I, [
+      "Noturar obyektning kadastr pasportini shakllantirish va davlat ro'yxatidan o'tkazish",
+      'Noturar kompozit'
+    ])) {
+      if (_cmp(O) === _cmp("Ko'p yillik daraxtlar xizmati")) return _num(cfg['noturar:daraxtlar'], 15);
+      if (_cmpIn(L, ['Noturar yer maydoni', 'Davlat tashkilotlaridan ijaraga olingan yer uchastkasi'])) {
+        return _num(cfg['noturar:yer_yoki_davlat'], 7);
+      }
+      return _areaTierDays(W, cfg);
+    }
+
+    // 6) Umumiy foydalanishdagi ko'chmas mulk qismini yaratish
+    if (_cmp(I) === _cmp("Umumiy foydalanishdagi ko'chmas mulk qismini yaratish")) {
+      var isTurar;
+      if (_cmp(L) === '') {
+        // Obyekt turi 2 bo'sh — Priznak bo'yicha aniqlanadi.
+        isTurar = _cmpIn(O, ['Turar joy xizmati', 'Yakka tartibdagi turar joy']);
+      } else {
+        isTurar = _cmpIn(L, ['Yakka tartibdagi turar joy', 'Turar joy xizmati']);
+      }
+      if (isTurar) return _num(cfg['umumiy:turar'], 10);
+      return _areaTierDays(W, cfg);
+    }
+
+    // 7) Hech qaysi qoidaga mos kelmadi — standart.
+    return _num(cfg['default'], Config.value('defaultDeadlineDays', 10));
+  }
+
+  /**
    * Arizaning belgilangan muddat sanasini hisoblaydi.
-   * Agar HISOBOT'da muddat berilmagan bo'lsa, qabul sanasiga ariza turi bo'yicha
-   * ish kunlari qo'shiladi.
+   * Agar HISOBOT'da muddat berilmagan bo'lsa, qabul sanasiga formula bo'yicha
+   * hisoblangan ish kunlari qo'shiladi.
    * @param {Object} row
    * @returns {Date|null}
    */
@@ -153,9 +311,7 @@ var BusinessLogic = (function () {
     var register = Utils.toDate(row.registerDate);
     if (!register) return null;
 
-    var rules = _loadRules();
-    var svc = Utils.normalize(row.applicationType) || Utils.normalize(row.serviceCode);
-    var days = rules.deadlineMap[svc];
+    var days = computeDeadlineDays(row);
     if (!days || days <= 0) {
       days = Config.value('defaultDeadlineDays', 10);
     }
@@ -305,6 +461,13 @@ var BusinessLogic = (function () {
     rec.objectType = Utils.str(raw.objectType);
     rec.serviceCode = Utils.str(raw.serviceCode);
 
+    // Muddat formulasi uchun qo'shimcha maydonlar (Excel: L,O,N,V,W).
+    rec.objectType2 = Utils.str(raw.objectType2);
+    rec.priznak = Utils.str(raw.priznak);
+    rec.applicationSource = Utils.str(raw.applicationSource);
+    rec.cadastrePassportType = Utils.str(raw.cadastrePassportType);
+    rec.externalArea = Utils.toNumber(raw.externalArea);
+
     // Status normalizatsiyasi.
     raw.statusRaw = raw.status;
     rec.status = normalizeStatus(raw.status);
@@ -321,6 +484,8 @@ var BusinessLogic = (function () {
     var deadline = computeDeadline(raw);
     rec.deadlineDate = deadline || '';
     raw.deadlineDate = deadline;
+    // Formula bo'yicha hisoblangan ish kunlari soni (ko'rsatish/tahlil uchun).
+    rec.deadlineDays = computeDeadlineDays(raw);
 
     var complete = Utils.toDate(raw.completeDate);
     rec.completeDate = complete || '';
@@ -387,15 +552,17 @@ var BusinessLogic = (function () {
     return out;
   }
 
-  /** Qoida keshini tozalash (SERVICE_RULES/AREA_RULES o'zgarsa). */
+  /** Qoida keshini tozalash (SERVICE_RULES/AREA_RULES/MUDDAT_QOIDALARI o'zgarsa). */
   function invalidate() {
     Cache.remove(RULES_CACHE_KEY);
+    Cache.remove(DEADLINE_CFG_CACHE_KEY);
   }
 
   return {
     normalizeStatus: normalizeStatus,
     classifyResidency: classifyResidency,
     computeDeadline: computeDeadline,
+    computeDeadlineDays: computeDeadlineDays,
     computeDeadlineStatus: computeDeadlineStatus,
     computeProgress: computeProgress,
     computePayment: computePayment,

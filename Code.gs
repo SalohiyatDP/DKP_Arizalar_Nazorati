@@ -548,8 +548,66 @@ function apiGetDeadlineSettings(token) {
     return {
       rules: DeadlineSettings.getRules(),
       holidays: DeadlineSettings.getHolidays(),
-      defaultDays: DeadlineSettings.getDefaultDays()
+      defaultDays: DeadlineSettings.getDefaultDays(),
+      deadlineConfig: DeadlineSettings.getDeadlineConfig()
     };
+  });
+}
+
+/**
+ * Muddat-formula qiymatini saqlaydi (qo'shadi/yangilaydi).
+ * @param {string} token
+ * @param {string} csrf
+ * @param {Object} param {key, value, desc}
+ * @returns {Object}
+ */
+function apiSaveDeadlineParam(token, csrf, param) {
+  return _guard(function () {
+    var session = _auth(token);
+    _csrf(session, csrf);
+    Security.require(session, PERMISSIONS.MANAGE_SETTINGS);
+    param = param || {};
+    var res = DeadlineSettings.saveDeadlineParam(param.key, param.value, param.desc);
+    if (!res.ok) throw new Error(res.error);
+    AppLog.action(ACTION_TYPE.SETTINGS_UPDATE, session.username,
+      'Muddat qoidasi (formula): ' + param.key + ' = ' + param.value);
+    return res;
+  });
+}
+
+/**
+ * Muddat-formula qiymatini o'chiradi (tuzilmaviy kalitlar o'chirilmaydi).
+ * @param {string} token
+ * @param {string} csrf
+ * @param {string} key
+ * @returns {Object}
+ */
+function apiDeleteDeadlineParam(token, csrf, key) {
+  return _guard(function () {
+    var session = _auth(token);
+    _csrf(session, csrf);
+    Security.require(session, PERMISSIONS.MANAGE_SETTINGS);
+    var res = DeadlineSettings.deleteDeadlineParam(key);
+    if (!res.ok) throw new Error(res.error);
+    AppLog.action(ACTION_TYPE.SETTINGS_UPDATE, session.username, 'Muddat qoidasi o\'chirildi (formula): ' + key);
+    return true;
+  });
+}
+
+/**
+ * Muddat-formula qiymatlarini standart holatga qaytaradi.
+ * @param {string} token
+ * @param {string} csrf
+ * @returns {Object}
+ */
+function apiResetDeadlineConfig(token, csrf) {
+  return _guard(function () {
+    var session = _auth(token);
+    _csrf(session, csrf);
+    Security.require(session, PERMISSIONS.MANAGE_SETTINGS);
+    DeadlineSettings.resetDeadlineConfig();
+    AppLog.action(ACTION_TYPE.SETTINGS_UPDATE, session.username, 'Muddat qoidalari standart holatga qaytarildi');
+    return DeadlineSettings.getDeadlineConfig();
   });
 }
 
