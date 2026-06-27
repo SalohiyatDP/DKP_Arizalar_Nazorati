@@ -48,6 +48,7 @@ var Dashboard = (function () {
       region: Utils.str(r.region),
       district: Utils.str(r.district),
       engineer: Utils.str(r.engineer),
+      registrator: Utils.str(r.registrator),
       applicationType: Utils.str(r.applicationType),
       objectType: Utils.str(r.objectType),
       serviceCode: Utils.str(r.serviceCode),
@@ -56,6 +57,8 @@ var Dashboard = (function () {
       registerDate: r.registerDate || '',
       deadlineDate: r.deadlineDate || '',
       completeDate: r.completeDate || '',
+      issuedDate: r.issuedDate || '',
+      issued: (r.issued === true || r.issued === 'true' || r.issued === 'TRUE'),
       status: Utils.str(r.status),
       deadlineStatus: Utils.str(r.deadlineStatus),
       remainingDays: Utils.toNumber(r.remainingDays),
@@ -117,6 +120,7 @@ var Dashboard = (function () {
       if (f.region && Utils.normalize(r.region) !== Utils.normalize(f.region)) return false;
       if (f.district && Utils.normalize(r.district) !== Utils.normalize(f.district)) return false;
       if (f.engineer && Utils.normalize(r.engineer) !== Utils.normalize(f.engineer)) return false;
+      if (f.registrator && Utils.normalize(r.registrator) !== Utils.normalize(f.registrator)) return false;
       if (f.applicationType && Utils.normalize(r.applicationType) !== Utils.normalize(f.applicationType)) return false;
       if (f.objectType && Utils.normalize(r.objectType) !== Utils.normalize(f.objectType)) return false;
       if (f.residency && r.residency !== f.residency) return false;
@@ -222,6 +226,7 @@ var Dashboard = (function () {
       region: r.region,
       district: r.district,
       engineer: r.engineer,
+      registrator: r.registrator,
       applicationType: r.applicationType,
       objectType: r.objectType,
       residency: r.residency,
@@ -229,6 +234,8 @@ var Dashboard = (function () {
       registerDate: Utils.formatDate(r.registerDate),
       deadlineDate: Utils.formatDate(r.deadlineDate),
       completeDate: Utils.formatDate(r.completeDate),
+      issuedDate: Utils.formatDate(r.issuedDate),
+      issued: r.issued === true,
       status: r.status,
       deadlineStatus: r.deadlineStatus,
       deadlineStatusLabel: DEADLINE_STATUS_LABEL[r.deadlineStatus] || '',
@@ -279,12 +286,13 @@ var Dashboard = (function () {
   function filterOptions(user) {
     var rows = scopeFor(user, loadAll());
     var regions = {}, districts = {}, engineers = {}, types = {}, objectTypes = {};
-    var years = {};
+    var years = {}, registrators = {};
     for (var i = 0; i < rows.length; i++) {
       var r = rows[i];
       if (r.region) regions[r.region] = true;
       if (r.district) districts[r.district] = (districts[r.district] || r.region);
       if (r.engineer) engineers[r.engineer] = (engineers[r.engineer] || r.district);
+      if (r.registrator) registrators[r.registrator] = (registrators[r.registrator] || r.district);
       if (r.applicationType) types[r.applicationType] = true;
       if (r.objectType) objectTypes[r.objectType] = true;
       if (r.year) years[r.year] = true;
@@ -296,6 +304,9 @@ var Dashboard = (function () {
       }).sort(function (a, b) { return a.name.localeCompare(b.name); }),
       engineers: Object.keys(engineers).map(function (e) {
         return { name: e, district: engineers[e] };
+      }).sort(function (a, b) { return a.name.localeCompare(b.name); }),
+      registrators: Object.keys(registrators).map(function (e) {
+        return { name: e, district: registrators[e] };
       }).sort(function (a, b) { return a.name.localeCompare(b.name); }),
       applicationTypes: Object.keys(types).sort(),
       objectTypes: Object.keys(objectTypes).sort(),
@@ -344,6 +355,8 @@ var Dashboard = (function () {
         monthlyIncomeFmt: Utils.formatMoney(fin.summary.monthlyIncome, true),
         totalPaid: fin.summary.totalPaid,
         totalPaidFmt: Utils.formatMoney(fin.summary.totalPaid, true),
+        totalAmount: fin.summary.totalAmount,
+        totalAmountFmt: Utils.formatMoney(fin.summary.totalAmount, true),
         totalDebt: fin.summary.totalDebt,
         totalDebtFmt: Utils.formatMoney(fin.summary.totalDebt, true),
         collectionRate: fin.summary.collectionRate
@@ -379,7 +392,9 @@ var Dashboard = (function () {
         comparison: fin.comparison,
         monthly: fin.monthly,
         byRegion: fin.byRegion.slice(0, 20),
-        byDistrict: fin.byDistrict.slice(0, 200)
+        byDistrict: fin.byDistrict.slice(0, 200),
+        byEngineer: fin.byEngineer.slice(0, 1000),
+        byRegistrator: fin.byRegistrator.slice(0, 1000)
       },
       recentActivities: _recentActivities(rows)
     };

@@ -44,6 +44,7 @@ var HISOBOT_FIELDS = {
   region:           ['Viloyat', 'VILOYAT', 'REGION', 'HUDUD'],
   district:         ['Tuman', 'TUMAN', 'DISTRICT'],
   engineer:         ['Ijrochi muhandis', 'MUHANDIS', 'ENGINEER', 'IJROCHI MUHANDIS'],
+  registrator:      ['Ijrochi registrator', 'REGISTRATOR', 'Registrator'],
   applicationType:  ['Ariza turi', 'ARIZA TURI', 'APPLICATION TYPE', 'Ariza maqsadi'],
   objectType:       ['Obyekt turi', 'OBYEKT TURI', 'OBJECT TYPE'],
   serviceCode:      ['Tranzaksiya turi', 'XIZMAT KODI', 'SERVICE CODE'],
@@ -51,6 +52,7 @@ var HISOBOT_FIELDS = {
   registerDate:     ['Ariza kelib tushgan sana', 'QABUL SANASI', 'KIRISH SANASI', 'ARIZA SANASI'],
   deadlineDate:     ['IJRO MUDDATI', 'MUDDAT SANASI', 'DEADLINE'],
   completeDate:     ['Oxirgi jarayon sana', 'BAJARILGAN SANA', 'TUGATILGAN SANA'],
+  issuedDate:       ['To\'lovga chiqarilgan sana', 'TO\'LOVGA CHIQARILGAN SANA'],
   status:           ['Tizimdagi holati', 'HOLAT', 'ARIZA HOLATI', 'STATUS'],
   paymentDate:      ['To\'langan sana', 'TO\'LOV SANASI', 'PAYMENT DATE'],
   paymentStatus:    ['To\'lov holati', 'TO\'LOV HOLATI', 'PAYMENT STATUS'],
@@ -72,9 +74,9 @@ var HISOBOT_FIELDS = {
 /** DATA varag'ida ishlatiladigan kanonik ustun tartibi (transformatsiyadan keyin). */
 var DATA_COLUMNS = [
   'rowId', 'applicationNo', 'transactionNo', 'cadastreNo', 'customer', 'pnfl', 'tin',
-  'region', 'district', 'engineer', 'applicationType', 'objectType', 'serviceCode',
-  'residency', 'area', 'registerDate', 'deadlineDate', 'completeDate', 'status',
-  'deadlineStatus', 'remainingDays', 'progressPercent', 'colorStatus',
+  'region', 'district', 'engineer', 'registrator', 'applicationType', 'objectType', 'serviceCode',
+  'residency', 'area', 'registerDate', 'deadlineDate', 'completeDate', 'issuedDate', 'status',
+  'deadlineStatus', 'remainingDays', 'progressPercent', 'colorStatus', 'issued',
   'amount', 'paidAmount', 'debtAmount', 'paymentStatus', 'paymentDate', 'note',
   'year', 'month', 'importBatch', 'updatedAt'
 ];

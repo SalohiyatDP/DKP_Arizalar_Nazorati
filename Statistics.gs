@@ -128,18 +128,20 @@ var Statistics = (function () {
    */
   function _bump(map, key, r) {
     if (!map[key]) {
-      map[key] = { name: key, total: 0, completed: 0, expired: 0, amount: 0, paid: 0 };
+      map[key] = { name: key, total: 0, completed: 0, issued: 0, expired: 0, amount: 0, paid: 0 };
     }
     var g = map[key];
     g.total++;
     if (r.deadlineStatus === DEADLINE_STATUS.COMPLETED) g.completed++;
+    if (r.issued === true || r.issued === 'true') g.issued++;
     if (r.deadlineStatus === DEADLINE_STATUS.EXPIRED) g.expired++;
     g.amount += Utils.toNumber(r.amount);
     g.paid += Utils.toNumber(r.paidAmount);
   }
 
   /**
-   * Guruhlar xaritasini reyting massiviga aylantiradi (SLA va bajarilish bo'yicha).
+   * Guruhlar xaritasini reyting massiviga aylantiradi.
+   * Tartiblash: eng ko'p yakunlangan (completed), so'ng to'langan summa bo'yicha.
    * @param {Object} map
    * @returns {Array<Object>}
    */
@@ -152,21 +154,17 @@ var Statistics = (function () {
         name: g.name,
         total: g.total,
         completed: g.completed,
+        issued: g.issued,
         expired: g.expired,
         completionRate: Utils.percentOf(g.completed, g.total),
         amount: g.amount,
         paid: g.paid,
-        score: 0
+        score: g.completed
       });
     }
-    // Reyting bali: bajarilish foizi - muddati o'tganlar jarimasi.
-    for (var i = 0; i < arr.length; i++) {
-      var e = arr[i];
-      e.score = Math.round(
-        e.completionRate - (Utils.percentOf(e.expired, e.total) * 0.5)
-      );
-    }
-    arr.sort(function (a, b) { return b.score - a.score || b.total - a.total; });
+    arr.sort(function (a, b) {
+      return b.completed - a.completed || b.issued - a.issued || b.paid - a.paid;
+    });
     for (var j = 0; j < arr.length; j++) arr[j].rank = j + 1;
     return arr;
   }

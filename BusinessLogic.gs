@@ -172,6 +172,17 @@ var BusinessLogic = (function () {
     var now = Utils.startOfDay(today || new Date());
     var status = row.status || normalizeStatus(row.statusRaw);
 
+    // MUHIM: To'lovga chiqarilgan (issued) arizaga muddat hisoblanmaydi —
+    // muhandis o'z ishini yakunlagan. To'lov esa alohida (mijoz zimmasida).
+    var issued = Utils.toDate(row.issuedDate);
+    if (issued) {
+      return {
+        deadlineStatus: DEADLINE_STATUS.COMPLETED,
+        remainingDays: 0,
+        colorStatus: COLOR_STATUS.GREEN
+      };
+    }
+
     // Bajarilgan/bekor qilingan arizalar muddat hisobidan chiqariladi.
     if (status === APP_STATUS.COMPLETED) {
       return {
@@ -289,6 +300,7 @@ var BusinessLogic = (function () {
     rec.region = Utils.str(raw.region);
     rec.district = Utils.str(raw.district);
     rec.engineer = Utils.str(raw.engineer);
+    rec.registrator = Utils.str(raw.registrator);
     rec.applicationType = Utils.str(raw.applicationType);
     rec.objectType = Utils.str(raw.objectType);
     rec.serviceCode = Utils.str(raw.serviceCode);
@@ -313,6 +325,12 @@ var BusinessLogic = (function () {
     var complete = Utils.toDate(raw.completeDate);
     rec.completeDate = complete || '';
     raw.completeDate = complete;
+
+    // To'lovga chiqarilgan sana — muddat hisobini to'xtatuvchi signal.
+    var issuedDate = Utils.toDate(raw.issuedDate);
+    rec.issuedDate = issuedDate || '';
+    raw.issuedDate = issuedDate;
+    rec.issued = issuedDate ? true : false;
 
     rec.area = Utils.toNumber(raw.area);
 

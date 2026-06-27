@@ -175,7 +175,7 @@ var Validation = (function () {
   function sanitizeFilters(filters) {
     filters = filters || {};
     var clean = {};
-    var stringFields = ['region', 'district', 'engineer', 'applicationType',
+    var stringFields = ['region', 'district', 'engineer', 'registrator', 'applicationType',
       'objectType', 'residency', 'status', 'deadlineStatus', 'paymentStatus',
       'cadastreNo', 'transactionNo', 'applicationNo', 'customer', 'pnfl', 'tin', 'search'];
     for (var i = 0; i < stringFields.length; i++) {

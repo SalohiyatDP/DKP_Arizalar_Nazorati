@@ -42,9 +42,15 @@
       <div class="modal-header"><h3>Parolni o'zgartirish talab qilinadi</h3></div>
       <div class="modal-body">
         <p class="mb-16" style="color:var(--text-secondary)">Xavfsizlik uchun birinchi kirishda parolingizni yangilang.</p>
-        <div class="field"><label>Joriy parol</label><input type="password" class="input" id="fpOld"></div>
-        <div class="field"><label>Yangi parol</label><input type="password" class="input" id="fpNew"></div>
-        <div class="field"><label>Yangi parolni tasdiqlang</label><input type="password" class="input" id="fpConfirm"></div>
+        <div class="field"><label>Joriy parol</label>
+          <div style="position:relative;"><input type="password" class="input" id="fpOld" style="padding-right:44px;">
+          <button type="button" class="btn-icon" onclick="App.togglePassword('fpOld', this)" style="position:absolute; right:4px; top:3px;"><span class="material-icons">visibility</span></button></div></div>
+        <div class="field"><label>Yangi parol</label>
+          <div style="position:relative;"><input type="password" class="input" id="fpNew" style="padding-right:44px;">
+          <button type="button" class="btn-icon" onclick="App.togglePassword('fpNew', this)" style="position:absolute; right:4px; top:3px;"><span class="material-icons">visibility</span></button></div></div>
+        <div class="field"><label>Yangi parolni tasdiqlang</label>
+          <div style="position:relative;"><input type="password" class="input" id="fpConfirm" style="padding-right:44px;">
+          <button type="button" class="btn-icon" onclick="App.togglePassword('fpConfirm', this)" style="position:absolute; right:4px; top:3px;"><span class="material-icons">visibility</span></button></div></div>
       </div>
       <div class="modal-footer">
         <button class="btn btn-primary" onclick="App.submitForcePassword()">Saqlash</button>

@@ -193,7 +193,7 @@ App._loadView = function (view) {
   switch (view) {
     case 'dashboard': Dash.load(); break;
     case 'applications': Apps.init(); break;
-    case 'finance': FinanceUI.load(); break;
+    case 'finance': FinanceUI.init(); break;
     case 'reports': ReportsUI.init(); break;
     case 'rankings': RankingsUI.load(); break;
     case 'import': ImportUI.init(); break;
@@ -409,6 +409,16 @@ Profile.submitChangePassword = function (ev) {
     errBox.textContent = e.message; errBox.classList.remove('hidden');
   });
   return false;
+};
+
+/* -------------------- PAROL KO'RSATISH/YASHIRISH -------------------- */
+App.togglePassword = function (inputId, btn) {
+  var inp = document.getElementById(inputId);
+  if (!inp) return;
+  var show = inp.type === 'password';
+  inp.type = show ? 'text' : 'password';
+  var icon = btn.querySelector('.material-icons');
+  if (icon) icon.textContent = show ? 'visibility_off' : 'visibility';
 };
 
 /* ============================== BOOT ================================= */

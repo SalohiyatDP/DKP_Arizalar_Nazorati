@@ -22,10 +22,12 @@ var Export = (function () {
     { key: 'region', label: 'Viloyat' },
     { key: 'district', label: 'Tuman' },
     { key: 'engineer', label: 'Muhandis' },
+    { key: 'registrator', label: 'Registrator' },
     { key: 'applicationType', label: 'Ariza turi' },
     { key: 'objectType', label: 'Obyekt turi' },
     { key: 'residencyLabel', label: 'Turar/Noturar' },
     { key: 'registerDate', label: 'Qabul sanasi' },
+    { key: 'issuedDate', label: 'To\'lovga chiqarilgan sana' },
     { key: 'deadlineDate', label: 'Muddat' },
     { key: 'completeDate', label: 'Bajarilgan sana' },
     { key: 'deadlineStatusLabel', label: 'Muddat holati' },
@@ -66,6 +68,7 @@ var Export = (function () {
         case 'registerDate':
         case 'deadlineDate':
         case 'completeDate':
+        case 'issuedDate':
           out.push(Utils.formatDate(r[key])); break;
         case 'residencyLabel':
           out.push(RESIDENCY_LABEL[r.residency] || ''); break;

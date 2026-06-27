@@ -43,7 +43,6 @@ Dash.load = function (force) {
       Dash._renderKpis(data.widgets);
     }
     Dash._renderTopEngineers(data.charts.topEngineers);
-    Dash._renderRecent(data.recentActivities);
     ChartsReady.then(function () { try { Dash._renderCharts(data.charts); } catch (ce) {} });
     App.progress(100);
   }).catch(function (e) {
@@ -135,15 +134,7 @@ Dash._renderCharts = function (charts) {
   new google.visualization.PieChart(document.getElementById('chartResidency')).draw(r,
     Object.assign({}, th, { colors: ['#1a73e8', '#5f6368'], pieHole: 0.4 }));
 
-  // Oylik tendensiya (combo)
-  var tr = new google.visualization.DataTable();
-  tr.addColumn('string', 'Oy'); tr.addColumn('number', 'Arizalar'); tr.addColumn('number', 'Daromad');
-  charts.monthlyTrend.forEach(function (m) { tr.addRow([m.label, m.applications, m.income]); });
-  new google.visualization.ComboChart(document.getElementById('chartTrend')).draw(tr,
-    Object.assign({}, th, {
-      seriesType: 'bars', colors: ['#1a73e8', '#2e7d32'],
-      series: { 1: { type: 'line', targetAxisIndex: 1 } }, legend: { position: 'top' }
-    }));
+  // Oylik tendensiya grafigi olib tashlandi (talab bo'yicha).
 
   // To'lov holati (pie)
   var p = new google.visualization.DataTable();
@@ -155,7 +146,6 @@ Dash._renderCharts = function (charts) {
 
 Dash.redraw = function () {
   if (Dash._charts) ChartsReady.then(function () { Dash._renderCharts(Dash._charts); });
-  if (typeof FinanceUI !== 'undefined' && FinanceUI._data) FinanceUI._drawChart();
 };
 
 
@@ -366,50 +356,84 @@ Apps.print = function () {
 /* ============================== MOLIYA =============================== */
 var FinanceUI = {};
 FinanceUI._data = null;
+FinanceUI._inited = false;
+
+FinanceUI.init = function () {
+  if (FinanceUI._inited) { FinanceUI.load(); return; }
+  function fill(o) {
+    function opts(items) {
+      return '<option value="">Barchasi</option>' + (items || []).map(function (it) {
+        var n = it.name || it; return '<option value="' + esc(n) + '">' + esc(n) + '</option>';
+      }).join('');
+    }
+    var dd = document.getElementById('finDistrict'); if (dd) dd.innerHTML = opts(o.districts);
+    var ee = document.getElementById('finEngineer'); if (ee) ee.innerHTML = opts(o.engineers);
+    var rr = document.getElementById('finRegistrator'); if (rr) rr.innerHTML = opts(o.registrators);
+    FinanceUI._inited = true;
+    FinanceUI.load();
+  }
+  if (State.filterOptions) fill(State.filterOptions);
+  else api('apiFilterOptions', State.token).then(function (o) { State.filterOptions = o; fill(o); })
+    .catch(function (e) { App.toast(e.message, 'error'); });
+};
+
+FinanceUI._filters = function () {
+  function v(id) { var el = document.getElementById(id); return el ? el.value : ''; }
+  return { district: v('finDistrict'), engineer: v('finEngineer'), registrator: v('finRegistrator') };
+};
 
 FinanceUI.load = function () {
   App.progress(30);
-  api('apiGetDashboard', State.token, {}).then(function (d) {
+  api('apiGetDashboard', State.token, FinanceUI._filters()).then(function (d) {
     App.progress(100);
     FinanceUI._data = d;
     var w = d.widgets;
     var kpi = [
-      { label: 'Jami summa', value: w.totalPaidFmt, icon: 'account_balance', color: 'var(--md-primary)' },
+      { label: 'Jami summa', value: w.totalAmountFmt || w.totalPaidFmt, icon: 'account_balance', color: 'var(--md-primary)' },
       { label: 'Yig\'ilgan to\'lov', value: w.totalPaidFmt, icon: 'payments', color: 'var(--md-success)' },
-      { label: 'Kutilayotgan to\'lov', value: w.totalDebtFmt, icon: 'schedule', color: 'var(--md-orange)' },
-      { label: 'Yig\'ilish darajasi', value: w.collectionRate + '%', icon: 'percent', color: 'var(--md-primary)' },
-      { label: 'Joriy oy daromadi', value: w.monthlyIncomeFmt, icon: 'trending_up', color: 'var(--md-success)' }
+      { label: 'To\'lov kutilmoqda', value: w.totalDebtFmt, icon: 'schedule', color: 'var(--md-orange)' },
+      { label: 'Yig\'ilish darajasi', value: w.collectionRate + '%', icon: 'percent', color: 'var(--md-primary)' }
     ];
     document.getElementById('financeKpi').innerHTML = kpi.map(function (c) {
       return '<div class="kpi"><div class="icon" style="background:' + c.color + '">' +
         '<span class="material-icons">' + c.icon + '</span></div><div><div class="value" style="font-size:18px">' +
         esc(c.value) + '</div><div class="label">' + esc(c.label) + '</div></div></div>';
     }).join('');
-    FinanceUI._renderRegionTable(d.finance.byDistrict || d.finance.byRegion);
-    ChartsReady.then(function () { FinanceUI._drawChart(); });
+    FinanceUI.render();
   }).catch(function (e) { App.toast(e.message, 'error'); App.progress(0); });
 };
 
-FinanceUI._drawChart = function () {
+FinanceUI.render = function () {
   if (!FinanceUI._data) return;
-  var monthly = FinanceUI._data.finance.monthly || [];
-  var dt = new google.visualization.DataTable();
-  dt.addColumn('string', 'Oy'); dt.addColumn('number', 'Daromad'); dt.addColumn('number', 'Qarz');
-  monthly.forEach(function (m) { dt.addRow([m.label, m.paid, m.debt]); });
-  new google.visualization.ColumnChart(document.getElementById('chartFinanceMonthly')).draw(dt,
-    Object.assign({}, chartTheme(), { colors: ['#2e7d32', '#c62828'], legend: { position: 'top' }, isStacked: false }));
+  var by = (document.getElementById('finGroupBy') || {}).value || 'district';
+  var fin = FinanceUI._data.finance;
+  var list = by === 'engineer' ? fin.byEngineer : by === 'registrator' ? fin.byRegistrator : fin.byDistrict;
+  var label = by === 'engineer' ? 'Muhandis' : by === 'registrator' ? 'Registrator' : 'Tuman';
+  document.getElementById('finCount').textContent =
+    'Jami: ' + (list ? list.length : 0) + ' ta ' + label.toLowerCase();
+  FinanceUI._renderTable(list, label);
 };
 
-FinanceUI._renderRegionTable = function (list) {
+FinanceUI._renderTable = function (list, label) {
   var t = document.getElementById('financeRegionTable');
   if (!list || !list.length) { t.innerHTML = '<tbody><tr><td>Ma\'lumot yo\'q</td></tr></tbody>'; return; }
-  t.innerHTML = '<thead><tr><th>Tuman</th><th>Arizalar</th><th>To\'langan</th>' +
+  t.innerHTML = '<thead><tr><th>' + esc(label) + '</th><th>Arizalar</th><th>To\'langan summa</th>' +
     '<th>To\'lov kutilmoqda</th></tr></thead><tbody>' +
     list.map(function (g) {
       return '<tr><td>' + esc(g.name) + '</td><td>' + g.count + '</td><td>' +
         Number(g.paid).toLocaleString('ru-RU') + '</td><td>' +
         Number(g.debt).toLocaleString('ru-RU') + '</td></tr>';
     }).join('') + '</tbody>';
+};
+
+FinanceUI.exportExcel = function () {
+  App.toast('Excel tayyorlanmoqda...', 'info');
+  App.progress(40);
+  api('apiExport', State.token, State.csrf, FinanceUI._filters(), 'xlsx').then(function (res) {
+    App.progress(100);
+    Apps._download(res.base64, res.fileName, res.mimeType);
+    App.toast(res.rows + ' qator Excelga eksport qilindi', 'success');
+  }).catch(function (e) { App.toast(e.message, 'error'); App.progress(0); });
 };
 
 /* ============================ REYTINGLAR ============================= */
@@ -423,10 +447,12 @@ RankingsUI.load = function () {
 RankingsUI._table = function (id, list, label) {
   var t = document.getElementById(id);
   if (!list || !list.length) { t.innerHTML = '<tbody><tr><td>Ma\'lumot yo\'q</td></tr></tbody>'; return; }
-  t.innerHTML = '<thead><tr><th>#</th><th>' + label + '</th><th>Jami</th><th>%</th><th>Ball</th></tr></thead><tbody>' +
+  t.innerHTML = '<thead><tr><th>#</th><th>' + label + '</th><th>Yakunlangan</th>' +
+    '<th>To\'lovga chiqarilgan</th><th>To\'langan summa</th></tr></thead><tbody>' +
     list.map(function (e) {
-      return '<tr><td>' + e.rank + '</td><td>' + esc(e.name) + '</td><td>' + e.total +
-        '</td><td>' + e.completionRate + '%</td><td><strong>' + e.score + '</strong></td></tr>';
+      return '<tr><td>' + e.rank + '</td><td>' + esc(e.name) + '</td><td><strong>' + e.completed +
+        '</strong></td><td>' + (e.issued || 0) + '</td><td>' +
+        Number(e.paid || 0).toLocaleString('ru-RU') + '</td></tr>';
     }).join('') + '</tbody>';
 };
 

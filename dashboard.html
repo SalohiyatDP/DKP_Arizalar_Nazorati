@@ -17,8 +17,6 @@
       <div id="chartStatus" class="chart-canvas"></div></div>
     <div class="card"><div class="card-title"><span class="material-icons">home_work</span> Turar / Noturar</div>
       <div id="chartResidency" class="chart-canvas"></div></div>
-    <div class="card"><div class="card-title"><span class="material-icons">trending_up</span> Oylik tendensiya</div>
-      <div id="chartTrend" class="chart-canvas"></div></div>
     <div class="card"><div class="card-title"><span class="material-icons">payments</span> To'lov holati</div>
       <div id="chartPayment" class="chart-canvas"></div></div>
   </div>
@@ -26,8 +24,6 @@
   <div class="grid charts-grid">
     <div class="card"><div class="card-title"><span class="material-icons">military_tech</span> Top 10 muhandis</div>
       <div class="table-wrap"><table class="data-table" id="topEngineersTable"></table></div></div>
-    <div class="card"><div class="card-title"><span class="material-icons">history</span> So'nggi faollik</div>
-      <div id="recentActivities"></div></div>
   </div>
 </section>
 
@@ -64,14 +60,47 @@
 
 <!-- =============================== MOLIYA =============================== -->
 <section id="view-finance" class="view hidden">
-  <div class="page-title">Moliya</div>
-  <div class="page-subtitle mb-16">Daromad, qarz va to'lovlar tahlili</div>
+  <div class="flex-between wrap mb-16">
+    <div><div class="page-title">Moliya</div>
+      <div class="page-subtitle">To'lovlarni tuman, muhandis yoki registrator kesimida tahlil qilish</div></div>
+    <button class="btn btn-primary no-print" onclick="FinanceUI.exportExcel()">
+      <span class="material-icons">grid_on</span> Excelga eksport</button>
+  </div>
   <div class="grid kpi-grid" id="financeKpi"></div>
-  <div class="grid charts-grid">
-    <div class="card"><div class="card-title"><span class="material-icons">bar_chart</span> Oylik daromad</div>
-      <div id="chartFinanceMonthly" class="chart-canvas"></div></div>
-    <div class="card"><div class="card-title"><span class="material-icons">map</span> Tumanlar bo'yicha</div>
-      <div class="table-wrap"><table class="data-table" id="financeRegionTable"></table></div></div>
+
+  <div class="card mb-16 mt-16 no-print">
+    <div class="card-title"><span class="material-icons">filter_alt</span> Filtr va guruhlash</div>
+    <div class="filters-grid">
+      <div class="field" style="margin:0;">
+        <label>Guruhlash</label>
+        <select class="select" id="finGroupBy" onchange="FinanceUI.render()">
+          <option value="district">Tumanlar bo'yicha</option>
+          <option value="engineer">Kadastr muhandislari bo'yicha</option>
+          <option value="registrator">Registratorlar bo'yicha</option>
+        </select>
+      </div>
+      <div class="field" style="margin:0;">
+        <label>Tuman</label>
+        <select class="select" id="finDistrict"><option value="">Barchasi</option></select>
+      </div>
+      <div class="field" style="margin:0;">
+        <label>Muhandis</label>
+        <select class="select" id="finEngineer"><option value="">Barchasi</option></select>
+      </div>
+      <div class="field" style="margin:0;">
+        <label>Registrator</label>
+        <select class="select" id="finRegistrator"><option value="">Barchasi</option></select>
+      </div>
+      <div class="field" style="margin:0; align-self:end;">
+        <button class="btn btn-primary btn-block" onclick="FinanceUI.load()">
+          <span class="material-icons">search</span> Qo'llash</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="flex-between mb-16"><span id="finCount" style="color:var(--text-secondary)">—</span></div>
+    <div class="table-wrap"><table class="data-table" id="financeRegionTable"></table></div>
   </div>
 </section>
 
