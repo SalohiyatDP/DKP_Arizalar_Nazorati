@@ -228,6 +228,20 @@ function apiGetDashboard(token, filters) {
 }
 
 /**
+ * Muddat nazorati ma'lumotlarini qaytaradi (toifalar + bosqich kesimi + ro'yxatlar).
+ * @param {string} token
+ * @param {Object} [filters]
+ * @returns {Object}
+ */
+function apiDeadlineControl(token, filters) {
+  return _guard(function () {
+    var session = _auth(token);
+    Security.require(session, PERMISSIONS.VIEW_DASHBOARD);
+    return Dashboard.deadlineControl(session, filters || {});
+  });
+}
+
+/**
  * Sahifalangan jadval ma'lumotini qaytaradi.
  * @param {string} token
  * @param {Object} filters

@@ -511,6 +511,113 @@ Apps.print = function () {
 };
 
 
+/* ========================= MUDDAT NAZORATI ========================== */
+var MuddatUI = {};
+MuddatUI._inited = false;
+MuddatUI._data = null;
+MuddatUI._cat = 'overdue';
+MuddatUI._cats = [
+  { key: 'overdue', label: 'Muddati o\'tgan', icon: 'error', color: 'var(--md-danger)' },
+  { key: 'today', label: 'Bugun tugaydi', icon: 'today', color: 'var(--md-orange)' },
+  { key: 'tomorrow', label: 'Ertaga', icon: 'event', color: 'var(--md-warning)' },
+  { key: 'dayAfter', label: 'Indinga', icon: 'event_upcoming', color: 'var(--md-secondary)' },
+  { key: 'notAccepted', label: 'Ijroga qabul qilinmagan', icon: 'assignment_late', color: 'var(--md-danger)' }
+];
+
+MuddatUI.init = function () {
+  if (MuddatUI._inited) { MuddatUI.load(); return; }
+  function fill(o) {
+    MuddatUI._opts = o;
+    var dd = document.getElementById('dcDistrict');
+    if (dd) dd.innerHTML = '<option value="">Barchasi</option>' +
+      (o.districts || []).map(function (d) { return '<option value="' + esc(d.name) + '">' + esc(d.name) + '</option>'; }).join('');
+    MuddatUI._fillEngineers();
+    MuddatUI._inited = true;
+    MuddatUI.load();
+  }
+  if (State.filterOptions) fill(State.filterOptions);
+  else api('apiFilterOptions', State.token).then(function (o) { State.filterOptions = o; fill(o); })
+    .catch(function (e) { App.toast(e.message, 'error'); });
+};
+
+MuddatUI._fillEngineers = function () {
+  var o = MuddatUI._opts; if (!o) return;
+  var d = (document.getElementById('dcDistrict') || {}).value || '';
+  var engs = (o.engineers || []).filter(function (e) { return !d || e.district === d; });
+  var ee = document.getElementById('dcEngineer');
+  if (ee) ee.innerHTML = '<option value="">Barchasi</option>' +
+    engs.map(function (e) { return '<option value="' + esc(e.name) + '">' + esc(e.name) + '</option>'; }).join('');
+};
+
+MuddatUI.onDistrictChange = function () { MuddatUI._fillEngineers(); };
+
+MuddatUI.load = function () {
+  function v(id) { var el = document.getElementById(id); return el ? el.value : ''; }
+  var filters = { district: v('dcDistrict'), engineer: v('dcEngineer') };
+  App.progress(30);
+  api('apiDeadlineControl', State.token, filters).then(function (d) {
+    App.progress(100);
+    MuddatUI._data = d;
+    MuddatUI._renderCards(d.counts);
+    MuddatUI._selectCat(MuddatUI._cat);
+  }).catch(function (e) { App.toast(e.message, 'error'); App.progress(0); });
+};
+
+MuddatUI._renderCards = function (counts) {
+  var html = '<div class="kpi-row">' + MuddatUI._cats.map(function (c) {
+    var active = c.key === MuddatUI._cat;
+    return '<div class="kpi" style="cursor:pointer;' +
+      (active ? 'outline:2px solid ' + c.color + ';' : '') + '" onclick="MuddatUI.selectCat(\'' + c.key + '\')">' +
+      '<div class="icon" style="background:' + c.color + '"><span class="material-icons">' + c.icon + '</span></div>' +
+      '<div><div class="value">' + ((counts && counts[c.key]) || 0) + '</div>' +
+      '<div class="label">' + esc(c.label) + '</div></div></div>';
+  }).join('') + '</div>';
+  document.getElementById('dcCards').innerHTML = html;
+};
+
+MuddatUI.selectCat = function (cat) {
+  MuddatUI._cat = cat;
+  if (MuddatUI._data) { MuddatUI._renderCards(MuddatUI._data.counts); MuddatUI._selectCat(cat); }
+};
+
+MuddatUI._selectCat = function (cat) {
+  var meta = MuddatUI._cats.filter(function (c) { return c.key === cat; })[0] || MuddatUI._cats[0];
+  App._setText('dcTitle', meta.label + ' arizalar');
+  var d = MuddatUI._data || { lists: {}, breakdown: {} };
+  var list = (d.lists && d.lists[cat]) || [];
+  var brk = (d.breakdown && d.breakdown[cat]) || [];
+
+  // "Hozir kimda" — bosqich kesimi (badge'lar).
+  var box = document.getElementById('dcBreakdown');
+  if (box) {
+    box.innerHTML = brk.length
+      ? '<div style="font-size:13px;color:var(--text-secondary);margin-bottom:6px">Hozir qaysi bosqichda (kimda):</div>' +
+        '<div class="flex gap-8 wrap">' + brk.map(function (b) {
+          return '<span class="badge" style="background:var(--md-primary);padding:6px 10px;font-size:12px">' +
+            esc(b.stage) + ': <strong>' + b.count + '</strong></span>';
+        }).join('') + '</div>'
+      : '';
+  }
+
+  var columns = [
+    { label: 'Tranzaksiya' }, { label: 'Mulkdor / Mijoz' }, { label: 'Telefon', html: true },
+    { label: 'Tuman' }, { label: 'Muhandis' }, { label: 'Hozirgi bosqich' },
+    { label: 'Muddat' }, { label: 'Qolgan kun' }
+  ];
+  var rows = list.map(function (p) {
+    var name = p.owner || p.customer || '—';
+    var phone = String(p.phone || '').trim();
+    var tel = phone ? '<a href="tel:' + esc(phone.replace(/[^0-9+]/g, '')) + '">' +
+      '<span class="material-icons" style="font-size:15px;vertical-align:middle">call</span> ' + esc(phone) + '</a>' : '—';
+    return [p.transactionNo || p.applicationNo || p.cadastreNo, name, tel,
+      p.district, p.engineer || '—', p.stage, p.deadlineDate || '—', p.remainingDays];
+  });
+  Grid.render('dcTable', columns, rows, { exportName: 'muddat_' + cat });
+};
+
+MuddatUI.exportExcel = function () { Grid.exportExcel('dcTable'); };
+
+
 /* ============================== MOLIYA =============================== */
 var FinanceUI = {};
 FinanceUI._data = null;

@@ -684,6 +684,114 @@ var Dashboard = (function () {
     }
   }
 
+  /**
+   * MUDDAT NAZORATI — admin/bosh muhandis/muhandis uchun muddat holati monitoringi.
+   * Ochiq arizalarni toifalarga ajratadi va har biri qaysi bosqichda (kimda)
+   * turganini ko'rsatadi. Muhandis roli — faqat o'ziga biriktirilgan arizalar.
+   * @param {Object} user
+   * @param {Object} [rawFilters]
+   * @returns {Object}
+   */
+  function deadlineControl(user, rawFilters) {
+    var filters = Validation.sanitizeFilters(rawFilters || {});
+    var rows = scopedRows(user, filters);
+
+    // Kadastr muhandisi — faqat o'ziga biriktirilgan arizalar.
+    if (user.role === ROLES.ENGINEER && user.fullName) {
+      var me = Utils.normalize(user.fullName);
+      var own = rows.filter(function (r) { return Utils.normalize(r.engineer) === me; });
+      if (own.length) rows = own;   // mos kelsa — faqat o'ziniki; aks holda tuman doirasi
+    }
+
+    function item(r) {
+      return {
+        transactionNo: Utils.str(r.transactionNo),
+        applicationNo: Utils.str(r.applicationNo),
+        cadastreNo: Utils.str(r.cadastreNo),
+        customer: Utils.str(r.customer),
+        owner: Utils.str(r.owner),
+        phone: Utils.str(r.phone),
+        district: Utils.str(r.district),
+        engineer: Utils.str(r.engineer),
+        chiefEngineer: Utils.str(r.chiefEngineer),
+        stage: Utils.str(r.lastProcessName) || 'Aniqlanmagan',
+        stageRole: Utils.str(r.lastProcessRole),
+        deadlineDate: Utils.formatDate(r.deadlineDate),
+        remainingDays: Utils.toNumber(r.remainingDays)
+      };
+    }
+
+    var cats = {
+      overdue: [], today: [], tomorrow: [], dayAfter: [], notAccepted: []
+    };
+    var CAP = 4000;
+
+    for (var i = 0; i < rows.length; i++) {
+      var r = rows[i];
+      if (r.deadlineStatus === DEADLINE_STATUS.COMPLETED) continue;  // ochiq emas
+
+      var notAccepted = _isNotAccepted(r);
+      if (notAccepted && cats.notAccepted.length < CAP) cats.notAccepted.push(item(r));
+
+      if (r.deadlineStatus === DEADLINE_STATUS.EXPIRED) {
+        if (cats.overdue.length < CAP) cats.overdue.push(item(r));
+      } else if (r.deadlineStatus === DEADLINE_STATUS.DUE_TODAY) {
+        if (cats.today.length < CAP) cats.today.push(item(r));
+      } else {
+        var rem = Utils.toNumber(r.remainingDays);
+        if (rem === 1 && cats.tomorrow.length < CAP) cats.tomorrow.push(item(r));
+        else if (rem === 2 && cats.dayAfter.length < CAP) cats.dayAfter.push(item(r));
+      }
+    }
+
+    // Har toifa bo'yicha "hozir kimda" (bosqich) kesimi.
+    function roleBreak(list) {
+      var m = {};
+      for (var j = 0; j < list.length; j++) {
+        var k = list[j].stage || 'Aniqlanmagan';
+        m[k] = (m[k] || 0) + 1;
+      }
+      return Object.keys(m).map(function (k) { return { stage: k, count: m[k] }; })
+        .sort(function (a, b) { return b.count - a.count; });
+    }
+
+    return {
+      generatedAt: Utils.formatDateTime(new Date()),
+      scope: { role: user.role, district: user.district || '', engineer: (user.role === ROLES.ENGINEER ? (user.fullName || '') : '') },
+      counts: {
+        overdue: cats.overdue.length,
+        today: cats.today.length,
+        tomorrow: cats.tomorrow.length,
+        dayAfter: cats.dayAfter.length,
+        notAccepted: cats.notAccepted.length
+      },
+      breakdown: {
+        overdue: roleBreak(cats.overdue),
+        today: roleBreak(cats.today),
+        tomorrow: roleBreak(cats.tomorrow),
+        dayAfter: roleBreak(cats.dayAfter),
+        notAccepted: roleBreak(cats.notAccepted)
+      },
+      lists: cats
+    };
+  }
+
+  /**
+   * Ariza ijroga qabul qilinmaganmi? (ijrochi muhandis biriktirilmagan yoki
+   * jarayon nomi "qabul qilinmagan"ni bildiradi). Heuristika — sozlanadi.
+   * @param {Object} r
+   * @returns {boolean}
+   */
+  function _isNotAccepted(r) {
+    if (!Utils.str(r.engineer)) return true;   // ijrochi biriktirilmagan
+    var s = Utils.normalize(Utils.str(r.lastProcessName) + ' ' + Utils.str(r.lastProcessRole))
+      .replace(/['\u02bb\u02bc`\u2019\u2018]/g, '');
+    return s.indexOf('ijroga qabul qilinmagan') !== -1 ||
+      s.indexOf('qabul qilinmagan') !== -1 ||
+      s.indexOf('ижрога кабул') !== -1 ||
+      s.indexOf('кабул килинмаган') !== -1;
+  }
+
   /** Ma'lumot keshini bekor qilish. */
   function invalidate() {
     Cache.remove(DATA_CACHE_KEY);
@@ -699,6 +807,7 @@ var Dashboard = (function () {
     search: search,
     filterOptions: filterOptions,
     getDashboard: getDashboard,
+    deadlineControl: deadlineControl,
     refreshSnapshot: refreshSnapshot,
     invalidate: invalidate
   };

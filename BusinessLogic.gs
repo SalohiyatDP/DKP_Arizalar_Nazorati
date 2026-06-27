@@ -538,12 +538,26 @@ var BusinessLogic = (function () {
     rec.progressPercent = computeProgress(raw, today);
 
     // Moliya — to'lov uchta qismdan iborat (Kadastr + Registratsiya + Manzil).
-    var amountSum = Utils.toNumber(raw.amountCadastre) +
-      Utils.toNumber(raw.amountReg) + Utils.toNumber(raw.amountAddr);
-    var paidSum = Utils.toNumber(raw.paidCadastre) +
-      Utils.toNumber(raw.paidReg) + Utils.toNumber(raw.paidAddr);
+    var amtCad = Utils.toNumber(raw.amountCadastre);
+    var amtReg = Utils.toNumber(raw.amountReg);
+    var amtAddr = Utils.toNumber(raw.amountAddr);
+    var pdCad = Utils.toNumber(raw.paidCadastre);
+    var pdReg = Utils.toNumber(raw.paidReg);
+    var pdAddr = Utils.toNumber(raw.paidAddr);
+    var amountSum = amtCad + amtReg + amtAddr;
+    var paidSum = pdCad + pdReg + pdAddr;
     rec.amount = amountSum > 0 ? amountSum : Utils.toNumber(raw.amount);
     rec.paidAmount = paidSum > 0 ? paidSum : Utils.toNumber(raw.paidAmount);
+    // Komponentlar (kesim tahlili uchun).
+    rec.amountCadastre = amtCad;
+    rec.amountReg = amtReg;
+    rec.amountAddr = amtAddr;
+    rec.paidCadastre = pdCad;
+    rec.paidReg = pdReg;
+    rec.paidAddr = pdAddr;
+    // KADASTR MUHANDISI moliyasi: faqat "Kadastr to'lov summasi" + "Manzil to'lov summasi".
+    rec.engineerAmount = amtCad + amtAddr;
+    rec.engineerPaid = pdCad + pdAddr;
     // computePayment yig'ilgan summalardan foydalanishi uchun raw'ga ham yozamiz.
     raw.amount = rec.amount;
     raw.paidAmount = rec.paidAmount;

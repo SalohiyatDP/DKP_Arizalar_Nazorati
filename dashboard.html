@@ -56,6 +56,42 @@
   </div>
 </section>
 
+<!-- ======================= MUDDAT NAZORATI ============================ -->
+<section id="view-deadlinectrl" class="view hidden">
+  <div class="page-title">Muddat nazorati</div>
+  <div class="page-subtitle mb-16">Muddat holati monitoringi — qaysi arizalar va hozir kimda turibdi</div>
+
+  <div class="kpi-rows" id="dcCards"></div>
+
+  <div class="card mb-16 mt-16 no-print">
+    <div class="filters-grid">
+      <div class="field" style="margin:0;">
+        <label>Tuman</label>
+        <select class="select" id="dcDistrict" onchange="MuddatUI.onDistrictChange()"><option value="">Barchasi</option></select>
+      </div>
+      <div class="field" style="margin:0;">
+        <label>Muhandis</label>
+        <select class="select" id="dcEngineer"><option value="">Barchasi</option></select>
+      </div>
+      <div class="field" style="margin:0; align-self:end;">
+        <button class="btn btn-primary btn-block" onclick="MuddatUI.load()">
+          <span class="material-icons">search</span> Qo'llash</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="flex-between wrap mb-16">
+      <h3 id="dcTitle" style="margin:0;">Muddati o'tgan arizalar</h3>
+      <button class="btn btn-primary no-print" onclick="MuddatUI.exportExcel()">
+        <span class="material-icons">grid_on</span> Excelga eksport</button>
+    </div>
+    <div id="dcBreakdown" style="margin-bottom:14px;"></div>
+    <div class="table-wrap"><table class="data-table" id="dcTable"></table></div>
+    <div id="dcTable_ctrl" class="no-print"></div>
+  </div>
+</section>
+
 <!-- =============================== MOLIYA =============================== -->
 <section id="view-finance" class="view hidden">
   <div class="flex-between wrap mb-16">

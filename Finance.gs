@@ -69,8 +69,14 @@ var Finance = (function () {
       var mKey = r.year + '-' + ('0' + r.month).slice(-2);
       _accMonth(byMonth, mKey, amount, paid, debt);
       _accGroup(byDistrict, r.district || 'Noma\'lum', amount, paid, debt, isWaiting, pendAmt);
-      _accGroup(byEngineer, r.engineer || 'Noma\'lum', amount, paid, debt, isWaiting, pendAmt);
       _accGroup(byRegistrator, r.registrator || 'Noma\'lum', amount, paid, debt, isWaiting, pendAmt);
+
+      // KADASTR MUHANDISI kesimi — to'lov faqat Kadastr + Manzil summalaridan.
+      var engAmount = Utils.toNumber(r.engineerAmount);
+      var engPaid = Utils.toNumber(r.engineerPaid);
+      var engDebt = Math.max(0, engAmount - engPaid);
+      var engPendAmt = isWaiting ? engDebt : 0;
+      _accGroup(byEngineer, r.engineer || 'Noma\'lum', engAmount, engPaid, engDebt, isWaiting, engPendAmt);
     }
 
     // Kutilayotgan to'lov summasi bo'yicha kamayuvchi tartibda (eng katta qarz oldinda).
