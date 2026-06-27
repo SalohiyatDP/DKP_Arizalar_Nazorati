@@ -152,6 +152,7 @@ var Import = (function () {
       // 8. CACHE (eski keshni tozalash, yangisini isitish)
       _step(report, 'Cache', 'RUNNING');
       Cache.flushAll();
+      Dashboard.invalidate();
       BusinessLogic.invalidate();
       BusinessCalendar.invalidate();
       _step(report, 'Cache', 'OK', 'Kesh tozalandi');

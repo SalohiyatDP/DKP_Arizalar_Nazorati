@@ -22,12 +22,13 @@ function api(method) {
     var runner = google.script.run
       .withSuccessHandler(function (res) {
         if (res && res.ok) return resolve(res.data);
-        var err = (res && res.error) || 'Noma\'lum xato';
-        if (res && res.code === 'AUTH') App.handleAuthExpired();
-        reject(new Error(err));
+        if (res && res.code === 'AUTH') { App.handleAuthExpired(); }
+        if (!res) { reject(new Error('Server bo\'sh javob qaytardi (' + method + ').')); return; }
+        reject(new Error(res.error || ('Server xatosi: ' + method +
+          ' (kod=' + (res.code || 'noma\'lum') + ')')));
       })
       .withFailureHandler(function (e) {
-        reject(new Error((e && e.message) ? e.message : String(e)));
+        reject(new Error((e && e.message) ? e.message : ('Server bilan aloqa xatosi: ' + method)));
       });
     if (typeof runner[method] !== 'function') {
       reject(new Error('Server funksiyasi topilmadi: "' + method +

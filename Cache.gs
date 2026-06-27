@@ -91,6 +91,8 @@ var Cache = (function () {
   function set(key, value, ttlSec) {
     var ttl = ttlSec || Config.value('cacheTtlSec', 1800);
     _memSet(key, value, ttl);
+    // Har bir kalitni kuzatamiz — shunda flushAll/invalidate ularni to'liq tozalaydi.
+    track(key);
 
     try {
       var cache = CacheService.getScriptCache();
@@ -101,7 +103,7 @@ var Cache = (function () {
         chunks.push(raw.substring(i, i + CHUNK_LIMIT));
       }
       if (chunks.length > MAX_CHUNKS) {
-        // Juda katta — faqat memory keshda qoldiramiz.
+        // Juda katta — CacheService'ga sig'maydi, faqat memory keshda qoladi.
         return false;
       }
       var toStore = {};
