@@ -61,9 +61,11 @@ var Import = (function () {
 
     // Bir vaqtning o'zida bitta import (concurrency himoyasi).
     try {
-      lock.waitLock(30000);
+      lock.waitLock(15000);
     } catch (e) {
-      report.error = 'Boshqa import jarayoni davom etmoqda. Iltimos kuting.';
+      report.error = 'Avvalgi import hali tugamagan (katta fayl bo\'lishi mumkin). ' +
+        'Iltimos 1-2 daqiqa kuting, so\'ng sahifani yangilab Dashboard\'ni tekshiring. ' +
+        'Agar takrorlansa, 5 daqiqadan keyin qayta urinib ko\'ring.';
       _step(report, 'Lock', 'ERROR', report.error);
       return report;
     }

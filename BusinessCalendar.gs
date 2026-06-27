@@ -15,37 +15,40 @@ var BusinessCalendar = (function () {
 
   var HOLIDAY_CACHE_KEY = 'biz::holidays';
 
+  // Bir ijro davomida bayramlarni qayta-qayta o'qimaslik uchun lokal memo.
+  var _holidayMemo = null;
+
   /**
-   * HOLIDAYS varag'idagi bayram sanalarini Set (lookup map) sifatida o'qiydi.
-   * Kesh orqali takroriy o'qishlar oldini oladi.
-   * @returns {Object<string, boolean>} {'yyyy-MM-dd': true}
+   * HOLIDAYS varag'idagi bayram sanalarini tezkor lookup map sifatida o'qiydi.
+   * Bir ijro (execution) davomida faqat bir marta o'qiladi.
+   * @returns {Object<number, boolean>} {sanaKaliti: true}
    */
   function _loadHolidays() {
-    return Cache.remember(HOLIDAY_CACHE_KEY, function () {
-      var map = {};
-      try {
-        if (!Repository.exists(SHEETS.HOLIDAYS)) return map;
+    if (_holidayMemo) return _holidayMemo;
+    var map = {};
+    try {
+      if (Repository.exists(SHEETS.HOLIDAYS)) {
         var matrix = Repository.readMatrix(SHEETS.HOLIDAYS);
-        // 1-qator sarlavha deb qabul qilinadi; 1-ustun — sana.
         for (var r = 1; r < matrix.length; r++) {
           var d = Utils.toDate(matrix[r][0]);
           if (d) map[_key(d)] = true;
         }
-      } catch (e) {
-        Logger.log('BusinessCalendar._loadHolidays xato: ' + e);
       }
-      return map;
-    }, Config.value('cacheTtlSec', 1800));
+    } catch (e) {
+      Logger.log('BusinessCalendar._loadHolidays xato: ' + e);
+    }
+    _holidayMemo = map;
+    return map;
   }
 
   /**
-   * Sana kaliti (yyyy-MM-dd).
+   * Sana kaliti — TEZKOR raqamli kalit (Utilities.formatDate ISHLATILMAYDI).
+   * 100 000+ qatorni qayta ishlashda unumdorlik uchun kritik.
    * @param {Date} d
-   * @returns {string}
+   * @returns {number} yyyymmdd ko'rinishidagi raqam
    */
   function _key(d) {
-    return Utilities.formatDate(Utils.startOfDay(d),
-      Config.value('timeZone', 'Asia/Tashkent'), 'yyyy-MM-dd');
+    return d.getFullYear() * 10000 + (d.getMonth() + 1) * 100 + d.getDate();
   }
 
   /**
@@ -184,6 +187,7 @@ var BusinessCalendar = (function () {
 
   /** HOLIDAYS o'zgargandan keyin keshni tozalash. */
   function invalidate() {
+    _holidayMemo = null;
     Cache.remove(HOLIDAY_CACHE_KEY);
   }
 
