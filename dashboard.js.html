@@ -27,16 +27,33 @@ Dash._data = null;
 
 Dash.load = function (force) {
   App.progress(30);
+  var kpi = document.getElementById('kpiContainer');
+  if (kpi) kpi.innerHTML = '<div style="padding:16px;color:var(--text-secondary)">Yuklanmoqda...</div>';
   api('apiGetDashboard', State.token, {}).then(function (data) {
     Dash._data = data;
     App.progress(70);
     App._setText('dashScope', Dash._scopeText(data.scope));
-    Dash._renderKpis(data.widgets);
+    if (!data.widgets || data.widgets.total === 0) {
+      if (kpi) kpi.innerHTML = '<div class="card" style="grid-column:1/-1">' +
+        '<div class="empty-state"><span class="material-icons">inbox</span>' +
+        '<div style="margin-top:8px"><strong>Ma\'lumot topilmadi</strong></div>' +
+        '<div style="margin-top:4px">Avval <b>Import</b> bo\'limidan hisobot faylini yuklang.</div>' +
+        '</div></div>';
+    } else {
+      Dash._renderKpis(data.widgets);
+    }
     Dash._renderTopEngineers(data.charts.topEngineers);
     Dash._renderRecent(data.recentActivities);
-    ChartsReady.then(function () { Dash._renderCharts(data.charts); });
+    ChartsReady.then(function () { try { Dash._renderCharts(data.charts); } catch (ce) {} });
     App.progress(100);
-  }).catch(function (e) { App.toast(e.message, 'error'); App.progress(0); });
+  }).catch(function (e) {
+    App.progress(0);
+    App.toast(e.message, 'error');
+    if (kpi) kpi.innerHTML = '<div class="card" style="grid-column:1/-1; border-left:4px solid var(--md-danger)">' +
+      '<strong style="color:var(--md-danger)">Dashboard yuklanmadi</strong>' +
+      '<div style="margin-top:8px; font-family:monospace; font-size:12px; white-space:pre-wrap">' +
+      esc(e.message) + '</div></div>';
+  });
 };
 
 Dash._scopeText = function (s) {
