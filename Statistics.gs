@@ -31,6 +31,9 @@ var Statistics = (function () {
       threeDays: 0,
       residential: 0,
       nonResidential: 0,
+      inProgressResidential: 0,
+      inProgressNonResidential: 0,
+      rejected: 0,
       paid: 0,
       partial: 0,
       waiting: 0,
@@ -55,18 +58,27 @@ var Statistics = (function () {
       var r = rows[i];
       acc.total++;
 
+      var inProgressNow = false;
       switch (r.deadlineStatus) {
         case DEADLINE_STATUS.COMPLETED: acc.completed++; break;
         case DEADLINE_STATUS.EXPIRED: acc.expired++; break;
-        case DEADLINE_STATUS.DUE_TODAY: acc.dueToday++; acc.inProgress++; break;
-        case DEADLINE_STATUS.ONE_DAY: acc.oneDay++; acc.inProgress++; break;
-        case DEADLINE_STATUS.TWO_DAYS: acc.twoDays++; acc.inProgress++; break;
-        case DEADLINE_STATUS.THREE_DAYS: acc.threeDays++; acc.inProgress++; break;
-        default: acc.inProgress++; break;
+        case DEADLINE_STATUS.DUE_TODAY: acc.dueToday++; acc.inProgress++; inProgressNow = true; break;
+        case DEADLINE_STATUS.ONE_DAY: acc.oneDay++; acc.inProgress++; inProgressNow = true; break;
+        case DEADLINE_STATUS.TWO_DAYS: acc.twoDays++; acc.inProgress++; inProgressNow = true; break;
+        case DEADLINE_STATUS.THREE_DAYS: acc.threeDays++; acc.inProgress++; inProgressNow = true; break;
+        default: acc.inProgress++; inProgressNow = true; break;
       }
 
-      if (r.residency === RESIDENCY.RESIDENTIAL) acc.residential++;
-      else if (r.residency === RESIDENCY.NON_RESIDENTIAL) acc.nonResidential++;
+      // Rad etilgan (tizim holati bo'yicha) — muddat holatidan mustaqil.
+      if (r.status === APP_STATUS.REJECTED) acc.rejected++;
+
+      if (r.residency === RESIDENCY.RESIDENTIAL) {
+        acc.residential++;
+        if (inProgressNow) acc.inProgressResidential++;
+      } else if (r.residency === RESIDENCY.NON_RESIDENTIAL) {
+        acc.nonResidential++;
+        if (inProgressNow) acc.inProgressNonResidential++;
+      }
 
       switch (r.paymentStatus) {
         case PAYMENT_STATUS.PAID: acc.paid++; break;
@@ -102,6 +114,9 @@ var Statistics = (function () {
         threeDays: acc.threeDays,
         residential: acc.residential,
         nonResidential: acc.nonResidential,
+        inProgressResidential: acc.inProgressResidential,
+        inProgressNonResidential: acc.inProgressNonResidential,
+        rejected: acc.rejected,
         paid: acc.paid,
         partial: acc.partial,
         waiting: acc.waiting,

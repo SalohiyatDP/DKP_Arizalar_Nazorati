@@ -125,8 +125,6 @@ Dash.load = function (force) {
     } else {
       Dash._renderKpis(data.widgets);
     }
-    Dash._renderTopEngineers(data.charts.topEngineers);
-    ChartsReady.then(function () { try { Dash._renderCharts(data.charts); } catch (ce) {} });
     App.progress(100);
   }).catch(function (e) {
     App.progress(0);
@@ -154,39 +152,40 @@ Dash._scopeText = function (s) {
 
 /* --------------------------- KPI KARTALAR ---------------------------- */
 Dash._renderKpis = function (w) {
-  var cards = [
-    { label: 'Jami arizalar', value: w.total, icon: 'description', color: 'var(--md-primary)' },
-    { label: 'Bajarilgan', value: w.completed, icon: 'check_circle', color: 'var(--md-success)' },
-    { label: 'Jarayonda', value: w.inProgress, icon: 'pending', color: 'var(--md-warning)' },
-    { label: 'Muddati o\'tgan', value: w.expired, icon: 'error', color: 'var(--md-danger)' },
-    { label: 'Bugun tugaydi', value: w.dueToday, icon: 'today', color: 'var(--md-orange)' },
-    { label: 'To\'lov kutilmoqda', value: w.waiting, icon: 'schedule', color: 'var(--md-orange)' },
-    { label: 'Turar joy', value: w.residential, icon: 'home', color: 'var(--md-primary)' },
-    { label: 'Noturar joy', value: w.nonResidential, icon: 'business', color: 'var(--md-secondary)' },
-    { label: 'Bajarilish', value: w.completionRate + '%', icon: 'task_alt', color: 'var(--md-success)' },
-    { label: 'Joriy oy daromadi', value: w.monthlyIncomeFmt, icon: 'payments', color: 'var(--md-success)' },
-    { label: 'Yig\'ilgan to\'lov', value: w.totalPaidFmt, icon: 'account_balance_wallet', color: 'var(--md-primary)' }
-  ];
-  document.getElementById('kpiContainer').innerHTML = cards.map(function (c) {
+  function card(c) {
     return '<div class="kpi"><div class="icon" style="background:' + c.color + '">' +
       '<span class="material-icons">' + c.icon + '</span></div>' +
       '<div><div class="value">' + esc(c.value) + '</div>' +
       '<div class="label">' + esc(c.label) + '</div></div></div>';
-  }).join('');
+  }
+  // 1-qator: Jarayondagi arizalar va undan kelib chiqadigan ko'rsatkichlar.
+  var row1 = [
+    { label: 'Jami jarayondagi arizalar', value: w.inProgress, icon: 'pending_actions', color: 'var(--md-warning)' },
+    { label: 'Bugun tugaydi', value: w.dueToday, icon: 'today', color: 'var(--md-orange)' },
+    { label: 'Muddati o\'tgan', value: w.expired, icon: 'error', color: 'var(--md-danger)' },
+    { label: 'Turar joy (jarayonda)', value: w.inProgressResidential, icon: 'home', color: 'var(--md-primary)' },
+    { label: 'Noturar joy (jarayonda)', value: w.inProgressNonResidential, icon: 'business', color: 'var(--md-secondary)' }
+  ];
+  // 2-qator: Shu oy uchun arizalar.
+  var row2 = [
+    { label: 'Shu oy jami arizalar', value: w.total, icon: 'description', color: 'var(--md-primary)' },
+    { label: 'Yakunlangan', value: w.completed, icon: 'check_circle', color: 'var(--md-success)' },
+    { label: 'Rad etilgan', value: w.rejected, icon: 'cancel', color: 'var(--md-danger)' },
+    { label: 'To\'lov kutilmoqda', value: w.waiting, icon: 'schedule', color: 'var(--md-orange)' }
+  ];
+  // 3-qator: Moliyaviy ko'rsatkichlar.
+  var row3 = [
+    { label: 'Joriy oy daromadi', value: w.monthlyIncomeFmt, icon: 'payments', color: 'var(--md-success)' },
+    { label: 'To\'lov kutilayotgan summa', value: w.totalDebtFmt, icon: 'account_balance_wallet', color: 'var(--md-orange)' }
+  ];
+  document.getElementById('kpiContainer').innerHTML =
+    '<div class="kpi-row">' + row1.map(card).join('') + '</div>' +
+    '<div class="kpi-row">' + row2.map(card).join('') + '</div>' +
+    '<div class="kpi-row">' + row3.map(card).join('') + '</div>';
 };
 
 /* ------------------------ TOP MUHANDISLAR ---------------------------- */
-Dash._renderTopEngineers = function (list) {
-  var t = document.getElementById('topEngineersTable');
-  if (!list || !list.length) { t.innerHTML = '<tbody><tr><td>Ma\'lumot yo\'q</td></tr></tbody>'; return; }
-  var rows = list.map(function (e) {
-    return '<tr><td>' + e.rank + '</td><td>' + esc(e.name) + '</td><td>' + e.total +
-      '</td><td>' + e.completionRate + '%</td><td><span class="badge" style="background:' +
-      (e.expired === 0 ? 'var(--md-success)' : e.expired <= 5 ? 'var(--md-warning)' : 'var(--md-danger)') +
-      '">' + e.expired + '</span></td></tr>';
-  }).join('');
-  t.innerHTML = '<thead><tr><th>#</th><th>Muhandis</th><th>Jami</th><th>Bajarilish</th><th>Muddati o\'tgan</th></tr></thead><tbody>' + rows + '</tbody>';
-};
+/* (Boshqaruv panelidan olib tashlandi — talab bo'yicha) */
 
 /* -------------------------- SO'NGGI FAOLLIK -------------------------- */
 Dash._renderRecent = function (list) {
@@ -204,37 +203,12 @@ Dash._renderRecent = function (list) {
 
 
 /* ----------------------------- GRAFIKLAR ----------------------------- */
-Dash._renderCharts = function (charts) {
-  Dash._charts = charts;
-  var th = chartTheme();
+/* Boshqaruv paneli grafiklari (Holat taqsimoti, Turar/Noturar, To'lov holati,
+ * Top muhandislar) talab bo'yicha olib tashlandi. Mavzu almashganda chaqiriladigan
+ * redraw endi hech narsa qilmaydi. */
+Dash._renderCharts = function () {};
 
-  // Holat taqsimoti (pie)
-  var s = new google.visualization.DataTable();
-  s.addColumn('string', 'Holat'); s.addColumn('number', 'Soni');
-  charts.statusDistribution.forEach(function (x) { s.addRow([x.label, x.value]); });
-  new google.visualization.PieChart(document.getElementById('chartStatus')).draw(s,
-    Object.assign({}, th, { colors: charts.statusDistribution.map(function (x) { return x.color; }), pieHole: 0.4 }));
-
-  // Turar/Noturar (pie)
-  var r = new google.visualization.DataTable();
-  r.addColumn('string', 'Tur'); r.addColumn('number', 'Soni');
-  charts.residency.forEach(function (x) { r.addRow([x.label, x.value]); });
-  new google.visualization.PieChart(document.getElementById('chartResidency')).draw(r,
-    Object.assign({}, th, { colors: ['#1a73e8', '#5f6368'], pieHole: 0.4 }));
-
-  // Oylik tendensiya grafigi olib tashlandi (talab bo'yicha).
-
-  // To'lov holati (pie)
-  var p = new google.visualization.DataTable();
-  p.addColumn('string', 'Holat'); p.addColumn('number', 'Soni');
-  charts.payment.forEach(function (x) { p.addRow([x.label, x.value]); });
-  new google.visualization.PieChart(document.getElementById('chartPayment')).draw(p,
-    Object.assign({}, th, { colors: ['#2e7d32', '#f9a825', '#ef6c00', '#c62828'] }));
-};
-
-Dash.redraw = function () {
-  if (Dash._charts) ChartsReady.then(function () { Dash._renderCharts(Dash._charts); });
-};
+Dash.redraw = function () {};
 
 
 /* ============================ ARIZALAR =============================== */
