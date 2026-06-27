@@ -141,9 +141,14 @@ Dash.load = function (force) {
 Dash._scopeText = function (s) {
   if (!s) return '';
   var period = s.period ? (' — ' + s.period) : '';
-  if (s.role === 'ADMIN') return 'Butun tizim bo\'yicha' + period;
-  if (s.district) return s.district + ' tumani bo\'yicha' + period;
-  return 'Umumiy holat' + period;
+  var base;
+  if (s.role === 'ADMIN') base = 'Butun tizim bo\'yicha' + period;
+  else if (s.district) base = s.district + ' tumani bo\'yicha' + period;
+  else base = 'Umumiy holat' + period;
+  if (s.sources && s.sources.length) {
+    base += '  ⚠️ Manba filtri faol (faqat: ' + s.sources.join(', ') + ')';
+  }
+  return base;
 };
 
 

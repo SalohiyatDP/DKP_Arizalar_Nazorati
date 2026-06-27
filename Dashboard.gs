@@ -409,9 +409,13 @@ var Dashboard = (function () {
     // shuning uchun oylik filtr qo'llanmaydi (aks holda eski to'lovlar 0 ko'rinardi).
     var fin = Finance.compute(roleRows);
 
+    // Faol manba filtri (agar bo'lsa) — UI'da ogohlantirish ko'rsatish uchun.
+    var srcFilter = [];
+    try { srcFilter = DeadlineSettings.getAllowedSources(); } catch (e) { srcFilter = []; }
+
     return {
       generatedAt: Utils.formatDateTime(new Date()),
-      scope: { role: user.role, district: user.district || '', period: period },
+      scope: { role: user.role, district: user.district || '', period: period, sources: srcFilter },
       widgets: {
         total: stats.summary.total,
         completed: stats.summary.completed,
