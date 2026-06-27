@@ -173,7 +173,13 @@ var Repository = (function () {
   function writeObjects(name, objects, columns, opts) {
     opts = opts || {};
     var sh = sheet(name, true);
-    if (opts.clearFirst !== false) clearData(name);
+    if (opts.clearFirst !== false) {
+      // Sarlavha qayta yoziladigan bo'lsa — varaqni TO'LIQ tozalaymiz (kontent + format).
+      // Ustun tartibi/soni o'zgarganda eski ustunlar qoldig'i yangi qiymatlarni
+      // buzmasligi (masalan amount ustuni eski sana/matn ustuni o'rniga tushishi) uchun.
+      if (opts.writeHeaders) sh.clear();
+      else clearData(name);
+    }
     if (opts.writeHeaders) writeHeaders(name, columns);
 
     if (!objects || objects.length === 0) return;

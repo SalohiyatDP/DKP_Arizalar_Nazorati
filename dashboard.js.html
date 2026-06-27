@@ -714,6 +714,15 @@ ImportUI._renderReport = function (rep) {
       Number(rep.readbackPaid || 0).toLocaleString('ru-RU') + ' so\'m' +
       (warn ? ' ⚠️ O\'qishda 0 — muammo o\'qish yo\'lida!' : '') + '</div>';
   }
+  if (rep.dataRawAmount != null) {
+    html += '<div style="margin-top:6px; padding:8px 10px; border-radius:6px; font-size:12px; background:var(--bg-surface-2)">' +
+      'DATA xom o\'qish: ustunlar=' + rep.dataCols + ', amount-ustun-indeksi=' + rep.dataAmountIdx +
+      ', xom-jami=' + Number(rep.dataRawAmount).toLocaleString('ru-RU') + ' so\'m' +
+      (rep.dataRawAmount > 0 && rep.readbackAmount === 0
+        ? ' — DATA\'da summa BOR, lekin o\'qish funksiyasi 0 beryapti!'
+        : (rep.dataRawAmount === 0 ? ' — DATA varag\'ining amount ustuni BO\'SH (yozishda muammo)!' : '')) +
+      '</div>';
+  }
   if (rep.detectedColumns && rep.detectedColumns.length) {
     html += '<div style="margin-top:10px"><strong>Tanilgan ustunlar (' +
       rep.detectedColumns.length + '):</strong><br><small style="color:var(--text-secondary)">' +

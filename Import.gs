@@ -177,11 +177,24 @@ var Import = (function () {
         report.readbackAmount = liveFin.summary.totalAmount;
         report.readbackPaid = liveFin.summary.totalPaid;
         var filteredOut = report.validRows - liveRows.length;
+
+        // Diagnostika: DATA varag'idan TO'G'RIDAN-TO'G'RI (xom) amount yig'indisi —
+        // readObjects/_normalizeRecord chetlab o'tiladi. Bu yozish vs o'qish muammosini ajratadi.
+        var dm = Repository.readMatrix(SHEETS.DATA);
+        var dh = (dm[0] || []).map(function (h) { return Utils.str(h); });
+        var ai = dh.indexOf('amount');
+        var rawSum = 0;
+        if (ai >= 0) { for (var di = 1; di < dm.length; di++) rawSum += Utils.toNumber(dm[di][ai]); }
+        report.dataAmountIdx = ai;
+        report.dataRawAmount = rawSum;
+        report.dataCols = dh.length;
+
         _step(report, 'Tekshiruv', 'OK',
           'DATA o\'qildi: ' + liveRows.length + ' qator' +
           (filteredOut > 0 ? ' (manba filtri ' + filteredOut + ' ta arizani chiqarib tashladi!)' : '') +
-          ' · Jami summa: ' + Utils.formatMoney(liveFin.summary.totalAmount, true) +
-          ' · To\'langan: ' + Utils.formatMoney(liveFin.summary.totalPaid, true));
+          ' · Jami: ' + Utils.formatMoney(liveFin.summary.totalAmount, true) +
+          ' | DATA xom: ustunlar=' + dh.length + ', amount-ustun-indeksi=' + ai +
+          ', xom-jami=' + Utils.formatMoney(rawSum, true));
       } catch (verr) {
         _step(report, 'Tekshiruv', 'ERROR', String(verr));
       }
