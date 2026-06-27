@@ -289,6 +289,73 @@ var Import = (function () {
   }
 
   /**
+   * Tayyor 2D jadvalni (mijoz tomonda o'qilgan) HISOBOT varag'iga yozadi.
+   * @param {Array<Array<*>>} matrix
+   * @returns {{rows: number, cols: number}}
+   */
+  function _writeMatrixToHisobot(matrix) {
+    if (!matrix || matrix.length === 0) {
+      throw new Error('Fayl bo\'sh yoki o\'qib bo\'lmadi.');
+    }
+    if (!Repository.exists(SHEETS.HISOBOT)) {
+      Repository.ss().insertSheet(SHEETS.HISOBOT);
+    }
+    Repository.clearAll(SHEETS.HISOBOT);
+    var sh = Repository.sheet(SHEETS.HISOBOT, true);
+
+    var cols = 0;
+    for (var i = 0; i < matrix.length; i++) {
+      if (matrix[i] && matrix[i].length > cols) cols = matrix[i].length;
+    }
+    if (cols === 0) throw new Error('Faylda ustunlar topilmadi.');
+
+    var clean = new Array(matrix.length);
+    for (var r = 0; r < matrix.length; r++) {
+      var row = matrix[r] || [];
+      var out = new Array(cols);
+      for (var c = 0; c < cols; c++) {
+        out[c] = (row[c] === undefined || row[c] === null) ? '' : row[c];
+      }
+      clean[r] = out;
+    }
+
+    var chunkSize = Config.value('importChunkSize', 5000);
+    var chunks = Utils.chunk(clean, chunkSize);
+    var cursor = 1;
+    for (var k = 0; k < chunks.length; k++) {
+      sh.getRange(cursor, 1, chunks[k].length, cols).setValues(chunks[k]);
+      cursor += chunks[k].length;
+      SpreadsheetApp.flush();
+    }
+    return { rows: Math.max(0, clean.length - 1), cols: cols };
+  }
+
+  /**
+   * Mijoz tomonda o'qilgan jadvaldan to'liq import qiladi.
+   * @param {Array<Array<*>>} matrix
+   * @param {Object} opts {fileName, actor}
+   * @returns {Object} Import hisoboti
+   */
+  function importFromMatrix(matrix, opts) {
+    opts = opts || {};
+    try {
+      var written = _writeMatrixToHisobot(matrix);
+      var report = run({ actor: opts.actor });
+      report.uploadedRows = written.rows;
+      report.fileName = opts.fileName || '';
+      return report;
+    } catch (err) {
+      var msg = String(err && err.message ? err.message : err);
+      if (typeof AppLog !== 'undefined') AppLog.error('Import.importFromMatrix', err);
+      return {
+        success: false, error: 'Faylni yozishda xato: ' + msg,
+        steps: [{ name: 'Fayl yuklash', status: 'ERROR', detail: msg }],
+        totalRows: 0, validRows: 0, invalidRows: 0
+      };
+    }
+  }
+
+  /**
    * Yuklangan fayl tarkibini (xlsx/xls/csv) HISOBOT varag'iga yozadi.
    * xlsx/xls — Drive orqali vaqtinchalik Google Sheet'ga aylantiriladi.
    * @param {string} base64 Fayl mazmuni (base64)
@@ -400,6 +467,7 @@ var Import = (function () {
   return {
     run: run,
     importFromFile: importFromFile,
+    importFromMatrix: importFromMatrix,
     lastImportInfo: lastImportInfo
   };
 })();

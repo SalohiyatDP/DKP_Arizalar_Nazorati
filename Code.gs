@@ -305,6 +305,28 @@ function apiLastImport(token) {
 }
 
 /**
+ * Mijoz tomonda o'qilgan jadval (2D massiv) orqali import qiladi.
+ * Drive API'ga bog'liq emas — eng ishonchli usul.
+ * @param {string} token
+ * @param {string} csrf
+ * @param {Object} payload {rows: Array<Array>, fileName}
+ * @returns {Object}
+ */
+function apiImportData(token, csrf, payload) {
+  return _guard(function () {
+    var session = _auth(token);
+    _csrf(session, csrf);
+    Security.require(session, PERMISSIONS.RUN_IMPORT);
+    payload = payload || {};
+    var report = Import.importFromMatrix(payload.rows, {
+      fileName: payload.fileName, actor: session.username
+    });
+    Notification.notifyImportComplete(report);
+    return report;
+  });
+}
+
+/**
  * Yuklangan fayldan (xlsx/xls/csv) to'g'ridan-to'g'ri import qiladi.
  * @param {string} token
  * @param {string} csrf

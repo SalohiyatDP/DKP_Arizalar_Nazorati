@@ -404,47 +404,69 @@ var ImportUI = {};
 ImportUI.init = function () {
   api('apiLastImport', State.token).then(function (info) {
     var box = document.getElementById('lastImportInfo');
-    if (!info) { box.innerHTML = 'Hali import qilinmagan.'; return; }
+    if (!box) return;
+    if (!info) { box.textContent = 'Hali import qilinmagan.'; return; }
     box.innerHTML = '<strong>So\'nggi import:</strong> ' + esc(info.startedAt) +
       '<br>Holat: <strong>' + esc(info.status) + '</strong> · Qatorlar: ' + esc(info.validRows) +
       '/' + esc(info.totalRows) + ' · Davomiyligi: ' + Math.round((info.durationMs || 0) / 1000) + ' s';
-  }).catch(function () {});
+  }).catch(function (e) {
+    var box = document.getElementById('lastImportInfo');
+    if (box) box.textContent = 'Ma\'lumotni olishda xato: ' + e.message;
+  });
 };
 
 ImportUI._selectedFile = null;
 
-/** Fayl tanlanganda — base64'ga o'qiydi. */
+/** Fayl tanlanganda — SheetJS bilan brauzerda 2D jadvalga o'qiydi. */
 ImportUI.onFileSelected = function (input) {
   var btn = document.getElementById('importFileBtn');
   var nameEl = document.getElementById('importFileName');
-  if (!input.files || !input.files.length) {
-    ImportUI._selectedFile = null; btn.disabled = true; nameEl.textContent = ''; return;
-  }
+  ImportUI._selectedFile = null;
+  btn.disabled = true;
+  if (!input.files || !input.files.length) { nameEl.textContent = ''; return; }
+
   var file = input.files[0];
   var maxMb = 25;
   if (file.size > maxMb * 1024 * 1024) {
     App.toast('Fayl hajmi ' + maxMb + ' MB dan oshmasligi kerak', 'error');
-    input.value = ''; btn.disabled = true; return;
+    input.value = ''; return;
   }
+  if (typeof XLSX === 'undefined') {
+    App.toast('Excel kutubxonasi yuklanmadi. Internetni tekshiring va sahifani yangilang.', 'error');
+    return;
+  }
+  nameEl.textContent = file.name + ' — o\'qilmoqda...';
   var reader = new FileReader();
   reader.onload = function (e) {
-    var base64 = e.target.result.split(',')[1];
-    ImportUI._selectedFile = { base64: base64, fileName: file.name, mimeType: file.type };
-    nameEl.textContent = file.name + ' (' + Math.round(file.size / 1024) + ' KB) — tayyor';
-    btn.disabled = false;
+    try {
+      var wb = XLSX.read(new Uint8Array(e.target.result), { type: 'array' });
+      var firstSheet = wb.Sheets[wb.SheetNames[0]];
+      var matrix = XLSX.utils.sheet_to_json(firstSheet, { header: 1, raw: false, defval: '' });
+      // Oxiridagi to'liq bo'sh qatorlarni olib tashlash.
+      while (matrix.length && matrix[matrix.length - 1].every(function (c) { return c === '' || c == null; })) {
+        matrix.pop();
+      }
+      if (matrix.length < 2) { throw new Error('Faylda yetarli ma\'lumot yo\'q (sarlavha + qatorlar).'); }
+      ImportUI._selectedFile = { rows: matrix, fileName: file.name };
+      nameEl.textContent = file.name + ' — ' + (matrix.length - 1) + ' qator tayyor';
+      btn.disabled = false;
+    } catch (err) {
+      App.toast('Faylni o\'qishda xato: ' + err.message, 'error');
+      nameEl.textContent = file.name + ' — xato';
+    }
   };
   reader.onerror = function () { App.toast('Faylni o\'qishda xato', 'error'); };
-  reader.readAsDataURL(file);
+  reader.readAsArrayBuffer(file);
 };
 
-/** Tanlangan faylni serverga yuklab, import qiladi. */
+/** Tanlangan jadvalni serverga yuborib, import qiladi. */
 ImportUI.uploadAndImport = function () {
   if (!ImportUI._selectedFile) { App.toast('Avval fayl tanlang', 'warning'); return; }
   var btn = document.getElementById('importFileBtn');
   btn.disabled = true;
-  btn.innerHTML = '<span class="material-icons" style="animation:spin 0.8s linear infinite">autorenew</span> Yuklanmoqda...';
+  btn.innerHTML = '<span class="material-icons" style="animation:spin 0.8s linear infinite">autorenew</span> Import qilinmoqda...';
   ImportUI._showProgress(10);
-  api('apiImportFile', State.token, State.csrf, ImportUI._selectedFile).then(function (rep) {
+  api('apiImportData', State.token, State.csrf, ImportUI._selectedFile).then(function (rep) {
     ImportUI._renderReport(rep);
     if (rep.success) {
       App.toast('Fayldan import: ' + rep.validRows + '/' + rep.totalRows + ' qator', 'success');
