@@ -11,6 +11,18 @@
   </div>
 
   <div class="kpi-rows" id="kpiContainer"><!-- KPI kartalar JS bilan to'ldiriladi (3 qator) --></div>
+
+  <div class="card mt-16">
+    <div class="flex-between wrap mb-16">
+      <div class="card-title" style="margin:0;"><span class="material-icons">table_chart</span>
+        Tumanlar kesimida — jarayondagi arizalar tahlili</div>
+      <button class="btn btn-primary no-print" onclick="Dash.exportSummary()">
+        <span class="material-icons">grid_on</span> Excelga eksport</button>
+    </div>
+    <div class="table-wrap">
+      <table class="data-table summary-table" id="summaryTable"></table>
+    </div>
+  </div>
 </section>
 
 
@@ -67,7 +79,7 @@
       </div>
       <div class="field" style="margin:0;">
         <label>Tuman</label>
-        <select class="select" id="finDistrict"><option value="">Barchasi</option></select>
+        <select class="select" id="finDistrict" onchange="FinanceUI.onDistrictChange()"><option value="">Barchasi</option></select>
       </div>
       <div class="field" style="margin:0;">
         <label>Muhandis</label>

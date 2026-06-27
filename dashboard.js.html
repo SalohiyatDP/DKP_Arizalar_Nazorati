@@ -125,6 +125,7 @@ Dash.load = function (force) {
     } else {
       Dash._renderKpis(data.widgets);
     }
+    Dash._renderSummary(data.summaryTable);
     App.progress(100);
   }).catch(function (e) {
     App.progress(0);
@@ -186,6 +187,104 @@ Dash._renderKpis = function (w) {
 
 /* ------------------------ TOP MUHANDISLAR ---------------------------- */
 /* (Boshqaruv panelidan olib tashlandi — talab bo'yicha) */
+
+/* --------------- TUMANLAR KESIMIDA SVOD JADVALI --------------------- */
+Dash._summary = null;
+Dash._dayCols = [
+  { key: 'd1', label: '1-kun' }, { key: 'd2', label: '2-kun' },
+  { key: 'd3', label: '3-kun' }, { key: 'd4', label: '4-kun' },
+  { key: 'd5', label: '5-kun' }, { key: 'd6_10', label: '6-10 kun' },
+  { key: 'd10p', label: '>10 kun' }
+];
+
+Dash._renderSummary = function (st) {
+  Dash._summary = st;
+  var t = document.getElementById('summaryTable');
+  if (!t) return;
+  if (!st || !st.rows || !st.rows.length) {
+    t.innerHTML = '<tbody><tr><td><div class="empty-state" style="padding:24px">' +
+      'Jarayonda turgan ariza yo\'q</div></td></tr></tbody>';
+    return;
+  }
+  var roles = st.roleColumns || [];
+  function n(v) { return v ? v : ''; }   // 0 ni bo'sh ko'rsatamiz (Excel uslubi)
+
+  // --- Guruhli sarlavha (2 qator) ---
+  var g1 = '<tr class="grp">' +
+    '<th colspan="2"></th>' +
+    '<th colspan="3">Asosiy ko\'rsatkichlar</th>' +
+    '<th colspan="2">Obyekt turi</th>' +
+    '<th colspan="' + (roles.length + 1) + '">Shundan jarayonda turgan rollar kesmida</th>' +
+    '<th colspan="' + Dash._dayCols.length + '">Muddat buzilishini oldini olish tahlili (qolgan kun)</th>' +
+    '</tr>';
+  var g2 = '<tr>' +
+    '<th>№</th><th class="ltxt">Hudud</th>' +
+    '<th>Jami</th><th>Muddati o\'tgan</th><th>Bugun tugaydi</th>' +
+    '<th>Turar</th><th>Noturar</th>' +
+    roles.map(function (r) { return '<th class="rot"><span>' + esc(r) + '</span></th>'; }).join('') +
+    '<th>Yakunlangan</th>' +
+    Dash._dayCols.map(function (d) { return '<th>' + esc(d.label) + '</th>'; }).join('') +
+    '</tr>';
+
+  function rowHtml(g, idx, isTotal) {
+    var tds = '';
+    tds += '<td>' + (isTotal ? '' : idx) + '</td>';
+    tds += '<td class="ltxt"><strong>' + esc(g.district) + '</strong></td>';
+    tds += '<td><strong>' + n(g.total) + '</strong></td>';
+    tds += '<td class="danger">' + n(g.expired) + '</td>';
+    tds += '<td class="warn">' + n(g.dueToday) + '</td>';
+    tds += '<td>' + n(g.residential) + '</td>';
+    tds += '<td>' + n(g.nonResidential) + '</td>';
+    tds += roles.map(function (r) { return '<td>' + n((g.roles || {})[r] || 0) + '</td>'; }).join('');
+    tds += '<td class="ok">' + n(g.completed) + '</td>';
+    tds += Dash._dayCols.map(function (d) { return '<td>' + n(g[d.key]) + '</td>'; }).join('');
+    return '<tr' + (isTotal ? ' class="totals"' : '') + '>' + tds + '</tr>';
+  }
+
+  var body = rowHtml(st.totals, 0, true) +
+    st.rows.map(function (g, i) { return rowHtml(g, i + 1, false); }).join('');
+
+  t.innerHTML = '<thead>' + g1 + g2 + '</thead><tbody>' + body + '</tbody>';
+};
+
+/** SVOD jadvalini Excelga eksport qiladi (yagona sarlavha qatori bilan). */
+Dash.exportSummary = function () {
+  var st = Dash._summary;
+  if (!st || !st.rows || !st.rows.length) { App.toast('Eksport uchun ma\'lumot yo\'q', 'warning'); return; }
+  var roles = st.roleColumns || [];
+  var headers = ['№', 'Hudud', 'Jami (jarayonda)', 'Muddati o\'tgan', 'Bugun tugaydi', 'Turar', 'Noturar']
+    .concat(roles)
+    .concat(['Yakunlangan'])
+    .concat(Dash._dayCols.map(function (d) { return d.label + ' qolgan'; }));
+  function rowArr(g, idx) {
+    return [idx, g.district, g.total, g.expired, g.dueToday, g.residential, g.nonResidential]
+      .concat(roles.map(function (r) { return (g.roles || {})[r] || 0; }))
+      .concat([g.completed])
+      .concat(Dash._dayCols.map(function (d) { return g[d.key]; }));
+  }
+  var aoa = [headers, rowArr(st.totals, '').map(function (v, i) { return i === 0 ? 'JAMI' : v; })];
+  aoa[1][1] = st.totals.district;
+  st.rows.forEach(function (g, i) { aoa.push(rowArr(g, i + 1)); });
+
+  var name = 'tumanlar_svod_' + (new Date()).toISOString().slice(0, 19).replace(/[:T]/g, '');
+  if (typeof XLSX !== 'undefined') {
+    var ws = XLSX.utils.aoa_to_sheet(aoa);
+    var wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, 'SVOD');
+    XLSX.writeFile(wb, name + '.xlsx');
+  } else {
+    var csv = aoa.map(function (row) {
+      return row.map(function (c) {
+        var s = String(c == null ? '' : c); return /[",\r\n;]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s;
+      }).join(',');
+    }).join('\r\n');
+    var blob = new Blob(['\uFEFF' + csv], { type: 'text/csv' });
+    var url = URL.createObjectURL(blob);
+    var a = document.createElement('a'); a.href = url; a.download = name + '.csv';
+    document.body.appendChild(a); a.click(); document.body.removeChild(a);
+    setTimeout(function () { URL.revokeObjectURL(url); }, 1000);
+  }
+};
 
 /* -------------------------- SO'NGGI FAOLLIK -------------------------- */
 Dash._renderRecent = function (list) {
@@ -416,14 +515,10 @@ FinanceUI._inited = false;
 FinanceUI.init = function () {
   if (FinanceUI._inited) { FinanceUI.load(); return; }
   function fill(o) {
-    function opts(items) {
-      return '<option value="">Barchasi</option>' + (items || []).map(function (it) {
-        var n = it.name || it; return '<option value="' + esc(n) + '">' + esc(n) + '</option>';
-      }).join('');
-    }
-    var dd = document.getElementById('finDistrict'); if (dd) dd.innerHTML = opts(o.districts);
-    var ee = document.getElementById('finEngineer'); if (ee) ee.innerHTML = opts(o.engineers);
-    var rr = document.getElementById('finRegistrator'); if (rr) rr.innerHTML = opts(o.registrators);
+    FinanceUI._opts = o;
+    var dd = document.getElementById('finDistrict');
+    if (dd) dd.innerHTML = FinanceUI._opts2html(o.districts);
+    FinanceUI._fillPersons();           // muhandis/registrator (tumanga moslab)
     FinanceUI._inited = true;
     FinanceUI.load();
   }
@@ -431,6 +526,27 @@ FinanceUI.init = function () {
   else api('apiFilterOptions', State.token).then(function (o) { State.filterOptions = o; fill(o); })
     .catch(function (e) { App.toast(e.message, 'error'); });
 };
+
+/** Ro'yxatni <option> larga aylantiradi (name yoki to'g'ridan-to'g'ri matn). */
+FinanceUI._opts2html = function (items) {
+  return '<option value="">Barchasi</option>' + (items || []).map(function (it) {
+    var n = it.name || it; return '<option value="' + esc(n) + '">' + esc(n) + '</option>';
+  }).join('');
+};
+
+/** Tanlangan tumanga ko'ra muhandis va registrator ro'yxatlarini qayta to'ldiradi (kaskad). */
+FinanceUI._fillPersons = function () {
+  var o = FinanceUI._opts; if (!o) return;
+  var district = (document.getElementById('finDistrict') || {}).value || '';
+  function inDistrict(p) { return !district || p.district === district; }
+  var engs = (o.engineers || []).filter(inDistrict);
+  var regs = (o.registrators || []).filter(inDistrict);
+  var ee = document.getElementById('finEngineer'); if (ee) ee.innerHTML = FinanceUI._opts2html(engs);
+  var rr = document.getElementById('finRegistrator'); if (rr) rr.innerHTML = FinanceUI._opts2html(regs);
+};
+
+/** Tuman o'zgarganda — pastki (muhandis/registrator) filtrlarni yangilaydi. */
+FinanceUI.onDistrictChange = function () { FinanceUI._fillPersons(); };
 
 FinanceUI._filters = function () {
   function v(id) { var el = document.getElementById(id); return el ? el.value : ''; }

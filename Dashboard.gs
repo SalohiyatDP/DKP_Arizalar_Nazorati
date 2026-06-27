@@ -477,8 +477,84 @@ var Dashboard = (function () {
         byEngineer: fin.byEngineer.slice(0, 1000),
         byRegistrator: fin.byRegistrator.slice(0, 1000)
       },
-      recentActivities: _recentActivities(viewRows)
+      recentActivities: _recentActivities(viewRows),
+      summaryTable: _buildSummaryTable(roleRows)
     };
+  }
+
+  /**
+   * Tuman kesimidagi SVOD jadvali (boshqaruv paneli ostida ko'rsatiladi).
+   * FAQAT ochiq (yakunlanmagan) arizalar bo'yicha hisoblanadi — chunki ular
+   * oylar bo'ylab o'tib boradi (kümülativ ish hajmi).
+   *   - Jami (jarayonda), Muddati o'tgan, Bugun tugaydi
+   *   - Turar / Noturar (obyekt turi)
+   *   - Jarayonda turgan rollar kesmida (lastProcessName bo'yicha dinamik ustunlar)
+   *   - Muddat buzilishini oldini olish tahlili: 1..5, 6-10, >10 kun qolgan
+   * @param {Array<Object>} rows  Rol bo'yicha cheklangan (butun davr) yozuvlar
+   * @returns {{roleColumns: Array<string>, rows: Array<Object>, totals: Object}}
+   */
+  function _buildSummaryTable(rows) {
+    function blank(name) {
+      return {
+        district: name, total: 0, expired: 0, dueToday: 0,
+        residential: 0, nonResidential: 0, completed: 0, roles: {},
+        d1: 0, d2: 0, d3: 0, d4: 0, d5: 0, d6_10: 0, d10p: 0
+      };
+    }
+    var roleSet = {};
+    var byDistrict = {};
+    var totals = blank('JAMI');
+
+    for (var i = 0; i < rows.length; i++) {
+      var r = rows[i];
+      var dk = r.district || 'Noma\'lum';
+      if (!byDistrict[dk]) byDistrict[dk] = blank(dk);
+      var g = byDistrict[dk];
+
+      // Yakunlangan arizalar — alohida hisoblanadi (ochiq ish hajmiga kirmaydi).
+      if (r.deadlineStatus === DEADLINE_STATUS.COMPLETED) {
+        g.completed++; totals.completed++;
+        continue;
+      }
+
+      // --- Ochiq (jarayonda turgan) arizalar ---
+      g.total++; totals.total++;
+
+      if (r.residency === RESIDENCY.RESIDENTIAL) { g.residential++; totals.residential++; }
+      else if (r.residency === RESIDENCY.NON_RESIDENTIAL) { g.nonResidential++; totals.nonResidential++; }
+
+      if (r.deadlineStatus === DEADLINE_STATUS.EXPIRED) {
+        g.expired++; totals.expired++;
+      } else if (r.deadlineStatus === DEADLINE_STATUS.DUE_TODAY) {
+        g.dueToday++; totals.dueToday++;
+      } else {
+        // Muddat buzilishigacha qolgan kunlar (faqat hali muddati kelmaganlar).
+        var rem = Utils.toNumber(r.remainingDays);
+        if (rem === 1) { g.d1++; totals.d1++; }
+        else if (rem === 2) { g.d2++; totals.d2++; }
+        else if (rem === 3) { g.d3++; totals.d3++; }
+        else if (rem === 4) { g.d4++; totals.d4++; }
+        else if (rem === 5) { g.d5++; totals.d5++; }
+        else if (rem >= 6 && rem <= 10) { g.d6_10++; totals.d6_10++; }
+        else if (rem > 10) { g.d10p++; totals.d10p++; }
+      }
+
+      // Jarayonda turgan rol (oxirgi jarayon nomi) kesimi — dinamik ustunlar.
+      var role = Utils.str(r.lastProcessName) || 'Aniqlanmagan';
+      roleSet[role] = true;
+      g.roles[role] = (g.roles[role] || 0) + 1;
+      totals.roles[role] = (totals.roles[role] || 0) + 1;
+    }
+
+    // Rol ustunlarini umumiy soni bo'yicha kamayuvchi tartibda (eng band rollar oldinda).
+    var roleColumns = Object.keys(roleSet).sort(function (a, b) {
+      return (totals.roles[b] || 0) - (totals.roles[a] || 0) || a.localeCompare(b);
+    });
+
+    var list = Object.keys(byDistrict).map(function (k) { return byDistrict[k]; })
+      .sort(function (a, b) { return b.total - a.total || a.district.localeCompare(b.district); });
+
+    return { roleColumns: roleColumns, rows: list, totals: totals };
   }
 
   /**

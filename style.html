@@ -100,6 +100,24 @@
   .kpi-grid { grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); }
   .kpi-rows { display: flex; flex-direction: column; gap: 16px; }
   .kpi-row { display: grid; gap: 16px; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); }
+
+  /* --- Tumanlar kesimida SVOD jadvali --- */
+  .summary-table { font-size: 12px; border-collapse: collapse; min-width: 900px; }
+  .summary-table th, .summary-table td {
+    border: 1px solid var(--divider); padding: 4px 6px; text-align: center; white-space: nowrap;
+  }
+  .summary-table thead th { background: var(--bg-surface-2); font-weight: 600; }
+  .summary-table thead tr.grp th { background: var(--md-primary); color: #fff; font-size: 11px; }
+  .summary-table th.ltxt, .summary-table td.ltxt { text-align: left; }
+  .summary-table tr.totals td { background: var(--bg-surface-2); font-weight: 700; }
+  .summary-table td.danger { color: var(--md-danger); font-weight: 600; }
+  .summary-table td.warn { color: var(--md-orange); font-weight: 600; }
+  .summary-table td.ok { color: var(--md-success); }
+  .summary-table th.rot { height: 96px; vertical-align: bottom; padding: 4px 2px; }
+  .summary-table th.rot span {
+    display: inline-block; writing-mode: vertical-rl; transform: rotate(180deg);
+    white-space: nowrap; font-weight: 500; font-size: 11px; max-height: 90px; overflow: hidden;
+  }
   .charts-grid { grid-template-columns: repeat(auto-fill, minmax(360px, 1fr)); margin-top: 16px; }
 
   .kpi {
