@@ -183,6 +183,8 @@ Apps._renderFilters = function (o) {
   html += selBox('fDistrict', 'Tuman', o.districts, 'name', 'name', 'Apps.onDistrictChange()');
   html += selBox('fEngineer', 'Muhandis', o.engineers, 'name', 'name');
   html += selBox('fType', 'Ariza turi', o.applicationTypes);
+  html += selBox('fProcRole', 'Oxirgi jarayon roli', o.lastProcessRoles || []);
+  html += selBox('fProcName', 'Oxirgi jarayon nomi', o.lastProcessNames || []);
   html += selBox('fResidency', 'Turar/Noturar', o.residencies, 'value', 'label');
   html += selBox('fDeadline', 'Muddat holati', o.deadlineStatuses, 'value', 'label');
   html += selBox('fPayment', 'To\'lov holati', o.paymentStatuses, 'value', 'label');
@@ -209,7 +211,8 @@ Apps._collectFilters = function () {
   function v(id) { var el = document.getElementById(id); return el ? el.value : ''; }
   return {
     district: v('fDistrict'), engineer: v('fEngineer'),
-    applicationType: v('fType'), residency: v('fResidency'), deadlineStatus: v('fDeadline'),
+    applicationType: v('fType'), lastProcessRole: v('fProcRole'), lastProcessName: v('fProcName'),
+    residency: v('fResidency'), deadlineStatus: v('fDeadline'),
     paymentStatus: v('fPayment'), year: v('fYear'), dateFrom: v('fDateFrom'),
     dateTo: v('fDateTo'), search: v('fSearch')
   };
@@ -286,6 +289,7 @@ Apps.showDetail = function (rowId) {
     row('STIR', r.tin) +
     row('Tuman', r.district) + row('Muhandis', r.engineer) +
     row('Ariza turi', r.applicationType) + row('Obyekt turi', r.objectType) +
+    row('Oxirgi jarayon roli', r.lastProcessRole) + row('Oxirgi jarayon nomi', r.lastProcessName) +
     row('Turar/Noturar', r.residencyLabel) + row('Qabul sanasi', r.registerDate) +
     row('Muddat', r.deadlineDate) + row('Bajarilgan', r.completeDate) +
     row('Muddat holati', r.deadlineStatusLabel) + row('Qolgan kun', r.remainingDays) +

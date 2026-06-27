@@ -56,7 +56,13 @@ var HISOBOT_FIELDS = {
   priznak:            ['Priznak'],                             // Excel O
   applicationSource:  ['Ariza manbasi'],                       // Excel N
   cadastrePassportType: ['Kadastr passport olish turi'],       // Excel V
-  externalArea:       ['Tashqi o\'lchovlar bo\'yicha maydon', 'Tashqi o`lchovlar bo`yicha maydon'], // Excel W  registerDate:     ['Ariza kelib tushgan sana', 'QABUL SANASI', 'KIRISH SANASI', 'ARIZA SANASI'],
+  externalArea:       ['Tashqi o\'lchovlar bo\'yicha maydon', 'Tashqi o`lchovlar bo`yicha maydon'], // Excel W
+
+  // Jarayon holati (filtrlash uchun) — standart hisobot ustunlari.
+  lastProcessRole:  ['Oxirgi jarayon roli'],
+  lastProcessName:  ['Oxirgi jarayon nomi'],
+
+  registerDate:     ['Ariza kelib tushgan sana', 'QABUL SANASI', 'KIRISH SANASI', 'ARIZA SANASI'],
   deadlineDate:     ['IJRO MUDDATI', 'MUDDAT SANASI', 'DEADLINE'],
   completeDate:     ['Oxirgi jarayon sana', 'BAJARILGAN SANA', 'TUGATILGAN SANA'],
   issuedDate:       ['To\'lovga chiqarilgan sana', 'TO\'LOVGA CHIQARILGAN SANA'],
@@ -83,6 +89,7 @@ var DATA_COLUMNS = [
   'rowId', 'applicationNo', 'transactionNo', 'cadastreNo', 'customer', 'tin',
   'district', 'engineer', 'registrator', 'applicationType', 'objectType', 'serviceCode',
   'objectType2', 'priznak', 'applicationSource', 'cadastrePassportType', 'externalArea',
+  'lastProcessRole', 'lastProcessName',
   'residency', 'area', 'registerDate', 'deadlineDate', 'deadlineDays', 'completeDate', 'issuedDate', 'status',
   'deadlineStatus', 'remainingDays', 'progressPercent', 'colorStatus', 'issued',
   'amount', 'paidAmount', 'debtAmount', 'paymentStatus', 'paymentDate', 'note',

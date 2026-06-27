@@ -169,7 +169,8 @@ var Validation = (function () {
     filters = filters || {};
     var clean = {};
     var stringFields = ['district', 'engineer', 'registrator', 'applicationType',
-      'objectType', 'residency', 'status', 'deadlineStatus', 'paymentStatus',
+      'objectType', 'lastProcessRole', 'lastProcessName', 'residency', 'status',
+      'deadlineStatus', 'paymentStatus',
       'cadastreNo', 'transactionNo', 'applicationNo', 'customer', 'tin', 'search'];
     for (var i = 0; i < stringFields.length; i++) {
       var f = stringFields[i];

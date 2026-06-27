@@ -50,6 +50,8 @@ var Dashboard = (function () {
       applicationType: Utils.str(r.applicationType),
       objectType: Utils.str(r.objectType),
       serviceCode: Utils.str(r.serviceCode),
+      lastProcessRole: Utils.str(r.lastProcessRole),
+      lastProcessName: Utils.str(r.lastProcessName),
       residency: Utils.str(r.residency),
       area: Utils.toNumber(r.area),
       registerDate: r.registerDate || '',
@@ -112,6 +114,8 @@ var Dashboard = (function () {
       if (f.registrator && Utils.normalize(r.registrator) !== Utils.normalize(f.registrator)) return false;
       if (f.applicationType && Utils.normalize(r.applicationType) !== Utils.normalize(f.applicationType)) return false;
       if (f.objectType && Utils.normalize(r.objectType) !== Utils.normalize(f.objectType)) return false;
+      if (f.lastProcessRole && Utils.normalize(r.lastProcessRole) !== Utils.normalize(f.lastProcessRole)) return false;
+      if (f.lastProcessName && Utils.normalize(r.lastProcessName) !== Utils.normalize(f.lastProcessName)) return false;
       if (f.residency && r.residency !== f.residency) return false;
       if (f.status && r.status !== f.status) return false;
       if (f.deadlineStatus && r.deadlineStatus !== f.deadlineStatus) return false;
@@ -215,6 +219,8 @@ var Dashboard = (function () {
       registrator: r.registrator,
       applicationType: r.applicationType,
       objectType: r.objectType,
+      lastProcessRole: r.lastProcessRole,
+      lastProcessName: r.lastProcessName,
       residency: r.residency,
       residencyLabel: RESIDENCY_LABEL[r.residency] || '',
       registerDate: Utils.formatDate(r.registerDate),
@@ -272,7 +278,7 @@ var Dashboard = (function () {
   function filterOptions(user) {
     var rows = scopeFor(user, loadAll());
     var districts = {}, engineers = {}, types = {}, objectTypes = {};
-    var years = {}, registrators = {};
+    var years = {}, registrators = {}, procRoles = {}, procNames = {};
     for (var i = 0; i < rows.length; i++) {
       var r = rows[i];
       if (r.district) districts[r.district] = true;
@@ -280,6 +286,8 @@ var Dashboard = (function () {
       if (r.registrator) registrators[r.registrator] = (registrators[r.registrator] || r.district);
       if (r.applicationType) types[r.applicationType] = true;
       if (r.objectType) objectTypes[r.objectType] = true;
+      if (r.lastProcessRole) procRoles[r.lastProcessRole] = true;
+      if (r.lastProcessName) procNames[r.lastProcessName] = true;
       if (r.year) years[r.year] = true;
     }
     return {
@@ -294,6 +302,8 @@ var Dashboard = (function () {
       }).sort(function (a, b) { return a.name.localeCompare(b.name); }),
       applicationTypes: Object.keys(types).sort(),
       objectTypes: Object.keys(objectTypes).sort(),
+      lastProcessRoles: Object.keys(procRoles).sort(),
+      lastProcessNames: Object.keys(procNames).sort(),
       years: Object.keys(years).map(Number).sort(function (a, b) { return b - a; }),
       residencies: [
         { value: RESIDENCY.RESIDENTIAL, label: RESIDENCY_LABEL.RESIDENTIAL },

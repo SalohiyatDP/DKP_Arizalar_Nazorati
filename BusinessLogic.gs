@@ -466,6 +466,10 @@ var BusinessLogic = (function () {
     rec.cadastrePassportType = Utils.str(raw.cadastrePassportType);
     rec.externalArea = Utils.toNumber(raw.externalArea);
 
+    // Jarayon holati (filtrlash uchun).
+    rec.lastProcessRole = Utils.str(raw.lastProcessRole);
+    rec.lastProcessName = Utils.str(raw.lastProcessName);
+
     // Status normalizatsiyasi.
     raw.statusRaw = raw.status;
     rec.status = normalizeStatus(raw.status);
