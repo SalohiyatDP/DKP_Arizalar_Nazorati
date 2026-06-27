@@ -129,14 +129,30 @@
   <div class="page-title">Ma'lumotlarni import qilish</div>
   <div class="page-subtitle mb-16">HISOBOT varag'idan bir tugma bilan import</div>
   <div class="card" style="max-width:640px;">
-    <div class="card-title"><span class="material-icons">cloud_upload</span> Bir tugmali import</div>
+    <div class="card-title"><span class="material-icons">cloud_upload</span> Excel/CSV faylni yuklab import qilish</div>
+    <p style="color:var(--text-secondary); margin-bottom:16px;">
+      Standart hisobot faylini (.xlsx, .xls yoki .csv) shu yerdan tanlang.
+      Fayl HISOBOT varag'iga yoziladi va to'liq import jarayoni avtomatik ishga tushadi.</p>
+    <div class="field">
+      <label>Hisobot fayli</label>
+      <input type="file" class="input" id="importFileInput"
+        accept=".xlsx,.xls,.csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+        onchange="ImportUI.onFileSelected(this)">
+      <small id="importFileName" style="color:var(--text-secondary);"></small>
+    </div>
+    <button class="btn btn-primary" id="importFileBtn" onclick="ImportUI.uploadAndImport()" disabled>
+      <span class="material-icons">upload_file</span> Faylni yuklab import qilish</button>
+  </div>
+
+  <div class="card mt-16" style="max-width:640px;">
+    <div class="card-title"><span class="material-icons">refresh</span> Mavjud HISOBOT'dan import</div>
     <p style="color:var(--text-secondary); margin-bottom:16px;">
       Import jarayoni: Zaxiralash → Tekshirish → Transformatsiya → Biznes mantiq →
       Statistika → Moliya → Kesh → Dashboard. Xato yuz bersa, ma'lumot avtomatik tiklanadi.</p>
     <div id="lastImportInfo" style="background:var(--bg-surface-2); padding:14px; border-radius:8px;
       margin-bottom:16px; font-size:13px;">So'nggi import ma'lumoti yuklanmoqda...</div>
-    <button class="btn btn-primary" id="importBtn" onclick="ImportUI.run()">
-      <span class="material-icons">play_arrow</span> Importni boshlash</button>
+    <button class="btn" id="importBtn" onclick="ImportUI.run()">
+      <span class="material-icons">play_arrow</span> HISOBOT'dan import</button>
     <div id="importProgress" class="hidden mt-16">
       <div class="progress-bar"><div class="progress-fill" id="importBar" style="width:0%"></div></div>
       <div id="importSteps" style="margin-top:12px; font-size:13px;"></div>

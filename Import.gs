@@ -288,8 +288,118 @@ var Import = (function () {
     };
   }
 
+  /**
+   * Yuklangan fayl tarkibini (xlsx/xls/csv) HISOBOT varag'iga yozadi.
+   * xlsx/xls — Drive orqali vaqtinchalik Google Sheet'ga aylantiriladi.
+   * @param {string} base64 Fayl mazmuni (base64)
+   * @param {string} fileName
+   * @param {string} mimeType
+   * @returns {{rows: number, cols: number}}
+   */
+  function _writeFileToHisobot(base64, fileName, mimeType) {
+    var bytes = Utilities.base64Decode(base64);
+    var name = Utils.str(fileName).toLowerCase();
+    var isCsv = name.slice(-4) === '.csv' || (mimeType || '').indexOf('csv') !== -1;
+
+    var matrix;
+    if (isCsv) {
+      // CSV — to'g'ridan-to'g'ri parse qilamiz.
+      var blobCsv = Utilities.newBlob(bytes, 'text/csv', fileName);
+      var text = blobCsv.getDataAsString('UTF-8');
+      matrix = Utilities.parseCsv(text);
+    } else {
+      // xlsx/xls — Drive orqali Google Sheet'ga aylantiramiz.
+      matrix = _readExcelViaDrive(bytes, fileName);
+    }
+
+    if (!matrix || matrix.length === 0) {
+      throw new Error('Fayl bo\'sh yoki o\'qib bo\'lmadi.');
+    }
+
+    // HISOBOT varag'ini to'liq tozalab, yangi ma'lumotni yozamiz.
+    if (!Repository.exists(SHEETS.HISOBOT)) {
+      Repository.ss().insertSheet(SHEETS.HISOBOT);
+    }
+    Repository.clearAll(SHEETS.HISOBOT);
+    var sh = Repository.sheet(SHEETS.HISOBOT, true);
+
+    // Ustunlar sonini tenglashtirish (parseCsv qatorlari turli uzunlikda bo'lishi mumkin).
+    var cols = 0;
+    for (var i = 0; i < matrix.length; i++) cols = Math.max(cols, matrix[i].length);
+    for (var r = 0; r < matrix.length; r++) {
+      while (matrix[r].length < cols) matrix[r].push('');
+    }
+
+    var chunkSize = Config.value('importChunkSize', 5000);
+    var chunks = Utils.chunk(matrix, chunkSize);
+    var cursor = 1;
+    for (var c = 0; c < chunks.length; c++) {
+      sh.getRange(cursor, 1, chunks[c].length, cols).setValues(chunks[c]);
+      cursor += chunks[c].length;
+      SpreadsheetApp.flush();
+    }
+    return { rows: Math.max(0, matrix.length - 1), cols: cols };
+  }
+
+  /**
+   * xlsx/xls baytlarini Drive yordamida vaqtinchalik Google Sheet'ga aylantirib o'qiydi.
+   * @param {Byte[]} bytes
+   * @param {string} fileName
+   * @returns {Array<Array<*>>}
+   */
+  function _readExcelViaDrive(bytes, fileName) {
+    var blob = Utilities.newBlob(bytes,
+      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', fileName);
+    var tempId = null;
+    try {
+      // Advanced Drive Service (v2) orqali konvertatsiya.
+      var resource = { title: 'DKP_import_' + Date.now() };
+      var file = Drive.Files.insert(resource, blob, { convert: true });
+      tempId = file.id;
+      var tempSs = SpreadsheetApp.openById(tempId);
+      var firstSheet = tempSs.getSheets()[0];
+      var lastRow = firstSheet.getLastRow();
+      var lastCol = firstSheet.getLastColumn();
+      if (lastRow < 1 || lastCol < 1) return [];
+      return firstSheet.getRange(1, 1, lastRow, lastCol).getValues();
+    } finally {
+      if (tempId) {
+        try { DriveApp.getFileById(tempId).setTrashed(true); } catch (e) { /* ignore */ }
+      }
+    }
+  }
+
+  /**
+   * Yuklangan fayldan to'liq import qiladi: avval HISOBOT'ni to'ldiradi, so'ng run().
+   * @param {Object} opts {base64, fileName, mimeType, actor}
+   * @returns {Object} Import hisoboti (qo'shimcha: uploadedRows)
+   */
+  function importFromFile(opts) {
+    opts = opts || {};
+    if (!opts.base64) {
+      return { success: false, error: 'Fayl yuborilmadi.', steps: [], totalRows: 0 };
+    }
+    try {
+      var written = _writeFileToHisobot(opts.base64, opts.fileName, opts.mimeType);
+      var report = run({ actor: opts.actor });
+      report.uploadedRows = written.rows;
+      report.fileName = opts.fileName;
+      return report;
+    } catch (err) {
+      var msg = String(err && err.message ? err.message : err);
+      if (typeof AppLog !== 'undefined') AppLog.error('Import.importFromFile', err);
+      return {
+        success: false,
+        error: 'Faylni o\'qishda xato: ' + msg,
+        steps: [{ name: 'Fayl yuklash', status: 'ERROR', detail: msg }],
+        totalRows: 0, validRows: 0, invalidRows: 0
+      };
+    }
+  }
+
   return {
     run: run,
+    importFromFile: importFromFile,
     lastImportInfo: lastImportInfo
   };
 })();

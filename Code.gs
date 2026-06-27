@@ -304,6 +304,30 @@ function apiLastImport(token) {
   });
 }
 
+/**
+ * Yuklangan fayldan (xlsx/xls/csv) to'g'ridan-to'g'ri import qiladi.
+ * @param {string} token
+ * @param {string} csrf
+ * @param {Object} payload {base64, fileName, mimeType}
+ * @returns {Object}
+ */
+function apiImportFile(token, csrf, payload) {
+  return _guard(function () {
+    var session = _auth(token);
+    _csrf(session, csrf);
+    Security.require(session, PERMISSIONS.RUN_IMPORT);
+    payload = payload || {};
+    var report = Import.importFromFile({
+      base64: payload.base64,
+      fileName: payload.fileName,
+      mimeType: payload.mimeType,
+      actor: session.username
+    });
+    Notification.notifyImportComplete(report);
+    return report;
+  });
+}
+
 /* ========================================================================== */
 /*                                 EKSPORT API                                */
 /* ========================================================================== */

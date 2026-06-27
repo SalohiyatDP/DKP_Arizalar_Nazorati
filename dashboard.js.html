@@ -411,22 +411,63 @@ ImportUI.init = function () {
   }).catch(function () {});
 };
 
+ImportUI._selectedFile = null;
+
+/** Fayl tanlanganda — base64'ga o'qiydi. */
+ImportUI.onFileSelected = function (input) {
+  var btn = document.getElementById('importFileBtn');
+  var nameEl = document.getElementById('importFileName');
+  if (!input.files || !input.files.length) {
+    ImportUI._selectedFile = null; btn.disabled = true; nameEl.textContent = ''; return;
+  }
+  var file = input.files[0];
+  var maxMb = 25;
+  if (file.size > maxMb * 1024 * 1024) {
+    App.toast('Fayl hajmi ' + maxMb + ' MB dan oshmasligi kerak', 'error');
+    input.value = ''; btn.disabled = true; return;
+  }
+  var reader = new FileReader();
+  reader.onload = function (e) {
+    var base64 = e.target.result.split(',')[1];
+    ImportUI._selectedFile = { base64: base64, fileName: file.name, mimeType: file.type };
+    nameEl.textContent = file.name + ' (' + Math.round(file.size / 1024) + ' KB) — tayyor';
+    btn.disabled = false;
+  };
+  reader.onerror = function () { App.toast('Faylni o\'qishda xato', 'error'); };
+  reader.readAsDataURL(file);
+};
+
+/** Tanlangan faylni serverga yuklab, import qiladi. */
+ImportUI.uploadAndImport = function () {
+  if (!ImportUI._selectedFile) { App.toast('Avval fayl tanlang', 'warning'); return; }
+  var btn = document.getElementById('importFileBtn');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="material-icons" style="animation:spin 0.8s linear infinite">autorenew</span> Yuklanmoqda...';
+  ImportUI._showProgress(10);
+  api('apiImportFile', State.token, State.csrf, ImportUI._selectedFile).then(function (rep) {
+    ImportUI._renderReport(rep);
+    if (rep.success) {
+      App.toast('Fayldan import: ' + rep.validRows + '/' + rep.totalRows + ' qator', 'success');
+      Dash.load(true); ImportUI.init(); App.loadNotifications();
+      document.getElementById('importFileInput').value = '';
+      ImportUI._selectedFile = null;
+    } else {
+      App.toast('Import xatosi: ' + rep.error, 'error');
+    }
+  }).catch(function (e) { App.toast(e.message, 'error'); App.progress(0); })
+    .then(function () {
+      btn.disabled = false;
+      btn.innerHTML = '<span class="material-icons">upload_file</span> Faylni yuklab import qilish';
+    });
+};
+
 ImportUI.run = function () {
   var btn = document.getElementById('importBtn');
   btn.disabled = true;
   btn.innerHTML = '<span class="material-icons" style="animation:spin 0.8s linear infinite">autorenew</span> Import qilinmoqda...';
-  document.getElementById('importProgress').classList.remove('hidden');
-  document.getElementById('importBar').style.width = '15%';
-  App.progress(20);
+  ImportUI._showProgress(15);
   api('apiRunImport', State.token, State.csrf).then(function (rep) {
-    document.getElementById('importBar').style.width = '100%';
-    App.progress(100);
-    var steps = (rep.steps || []).map(function (s) {
-      var color = s.status === 'OK' ? 'var(--md-success)' : s.status === 'ERROR' ? 'var(--md-danger)' : 'var(--text-secondary)';
-      return '<div style="color:' + color + '">• ' + esc(s.name) + ': ' + esc(s.status) +
-        (s.detail ? ' — ' + esc(s.detail) : '') + '</div>';
-    }).join('');
-    document.getElementById('importSteps').innerHTML = steps;
+    ImportUI._renderReport(rep);
     if (rep.success) {
       App.toast('Import muvaffaqiyatli: ' + rep.validRows + '/' + rep.totalRows, 'success');
       Dash.load(true); ImportUI.init(); App.loadNotifications();
@@ -436,8 +477,25 @@ ImportUI.run = function () {
   }).catch(function (e) { App.toast(e.message, 'error'); App.progress(0); })
     .then(function () {
       btn.disabled = false;
-      btn.innerHTML = '<span class="material-icons">play_arrow</span> Importni boshlash';
+      btn.innerHTML = '<span class="material-icons">play_arrow</span> HISOBOT\'dan import';
     });
+};
+
+ImportUI._showProgress = function (startPct) {
+  document.getElementById('importProgress').classList.remove('hidden');
+  document.getElementById('importBar').style.width = startPct + '%';
+  App.progress(startPct + 10);
+};
+
+ImportUI._renderReport = function (rep) {
+  document.getElementById('importBar').style.width = '100%';
+  App.progress(100);
+  var steps = (rep.steps || []).map(function (s) {
+    var color = s.status === 'OK' ? 'var(--md-success)' : s.status === 'ERROR' ? 'var(--md-danger)' : 'var(--text-secondary)';
+    return '<div style="color:' + color + '">• ' + esc(s.name) + ': ' + esc(s.status) +
+      (s.detail ? ' — ' + esc(s.detail) : '') + '</div>';
+  }).join('');
+  document.getElementById('importSteps').innerHTML = steps;
 };
 
 

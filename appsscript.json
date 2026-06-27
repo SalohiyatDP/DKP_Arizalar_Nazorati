@@ -1,7 +1,13 @@
 {
   "timeZone": "Asia/Tashkent",
   "dependencies": {
-    "enabledAdvancedServices": []
+    "enabledAdvancedServices": [
+      {
+        "userSymbol": "Drive",
+        "version": "v2",
+        "serviceId": "drive"
+      }
+    ]
   },
   "webapp": {
     "executeAs": "USER_DEPLOYING",
