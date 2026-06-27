@@ -267,6 +267,7 @@ Apps._renderFilters = function (o) {
   html += selBox('fDistrict', 'Tuman', o.districts, 'name', 'name', 'Apps.onDistrictChange()');
   html += selBox('fEngineer', 'Muhandis', o.engineers, 'name', 'name');
   html += selBox('fType', 'Ariza turi', o.applicationTypes);
+  html += selBox('fPurpose', 'Ariza maqsadi', o.applicationPurposes || []);
   html += selBox('fProcRole', 'Oxirgi jarayon roli', o.lastProcessRoles || []);
   html += selBox('fProcName', 'Oxirgi jarayon nomi', o.lastProcessNames || []);
   html += selBox('fResidency', 'Turar/Noturar', o.residencies, 'value', 'label');
@@ -295,7 +296,8 @@ Apps._collectFilters = function () {
   function v(id) { var el = document.getElementById(id); return el ? el.value : ''; }
   return {
     district: v('fDistrict'), engineer: v('fEngineer'),
-    applicationType: v('fType'), lastProcessRole: v('fProcRole'), lastProcessName: v('fProcName'),
+    applicationType: v('fType'), applicationPurpose: v('fPurpose'),
+    lastProcessRole: v('fProcRole'), lastProcessName: v('fProcName'),
     residency: v('fResidency'), deadlineStatus: v('fDeadline'),
     paymentStatus: v('fPayment'), year: v('fYear'), dateFrom: v('fDateFrom'),
     dateTo: v('fDateTo'), search: v('fSearch')
@@ -369,15 +371,19 @@ Apps.showDetail = function (rowId) {
   function row(l, v) { return '<tr><th style="width:40%">' + esc(l) + '</th><td>' + esc(v) + '</td></tr>'; }
   var body = '<table class="data-table"><tbody>' +
     row('Ariza raqami', r.applicationNo) + row('Tranzaksiya', r.transactionNo) +
-    row('Kadastr raqami', r.cadastreNo) + row('Mijoz', r.customer) +
-    row('STIR', r.tin) +
-    row('Tuman', r.district) + row('Muhandis', r.engineer) +
-    row('Ariza turi', r.applicationType) + row('Obyekt turi', r.objectType) +
+    row('Kadastr raqami', r.cadastreNo) + row('Arizadagi kadastr', r.arizaCadastreNo) +
+    row('Mijoz', r.customer) + row('Mulkdor', r.owner) + row('Telefon', r.phone) +
+    row('Tuman', r.district) + row('Mahalla', r.mahallaName) +
+    row('Bosh muhandis', r.chiefEngineer) + row('Muhandis', r.engineer) + row('Registrator', r.registrator) +
+    row('Ariza turi', r.applicationType) + row('Ariza maqsadi', r.applicationPurpose) +
+    row('Obyekt turi', r.objectType) + row('Obyekt turi 2', r.objectType2) +
+    row('Bo\'linish turi', r.objectSubdivision) + row('Ijtimoiy himoya', r.socialProtection) +
     row('Oxirgi jarayon roli', r.lastProcessRole) + row('Oxirgi jarayon nomi', r.lastProcessName) +
+    row('Rad sababi', r.rejectReason) +
     row('Turar/Noturar', r.residencyLabel) + row('Qabul sanasi', r.registerDate) +
     row('Muddat', r.deadlineDate) + row('Bajarilgan', r.completeDate) +
     row('Muddat holati', r.deadlineStatusLabel) + row('Qolgan kun', r.remainingDays) +
-    row('To\'lovga chiqarilgan', r.issuedDate) + row('Registrator', r.registrator) +
+    row('To\'lovga chiqarilgan', r.issuedDate) +
     row('Summa', r.amountFmt) +
     row('To\'langan', r.paidFmt) + row('Qarz', r.debtFmt) +
     row('To\'lov holati', r.paymentStatusLabel) + row('Izoh', r.note) +

@@ -37,64 +37,93 @@ var SHEETS = {
  * to'liq, so'ng qisman moslik bo'yicha avtomatik moslashtiriladi.
  */
 var HISOBOT_FIELDS = {
+  // --- Identifikatorlar ---
   applicationNo:    ['Ariza raqami', 'ARIZA RAQAMI', 'APPLICATION NUMBER'],
   transactionNo:    ['Tranzaksiya raqami', 'TRANZAKSIYA RAQAMI', 'TRANSACTION NUMBER'],
   cadastreNo:       ['Kadastr raqami', 'KADASTR RAQAMI', 'CADASTRE NUMBER'],
-  customer:         ['Buyurtmachi', 'Mulkdor', 'MIJOZ', 'ARIZACHI', 'CUSTOMER'],
-  tin:              ['STIR', 'INN', 'TIN'],
+  arizaCadastreNo:  ['Arizadagi kadastr raqami'],
+
+  // --- Mijoz / mulkdor ---
+  customer:         ['Buyurtmachi', 'MIJOZ', 'CUSTOMER'],
+  owner:            ['Mulkdor'],
+  phone:            ['Arizachi tel raqami'],
+
+  // --- Joylashuv ---
   district:         ['Tuman', 'TUMAN', 'DISTRICT'],
-  engineer:         ['Ijrochi muhandis', 'MUHANDIS', 'ENGINEER', 'IJROCHI MUHANDIS'],
+  mahallaCode:      ['Mahalla kodi'],
+  mahallaName:      ['Mahalla nomi'],
+
+  // --- Mas'ul xodimlar ---
+  engineer:         ['Ijrochi muhandis', 'IJROCHI MUHANDIS', 'ENGINEER'],
   chiefEngineer:    ['Ijrochi bosh muhandis'],
-  registrator:      ['Ijrochi registrator', 'REGISTRATOR', 'Registrator'],
-  applicationType:  ['Ariza turi', 'ARIZA TURI', 'APPLICATION TYPE', 'Ariza maqsadi'],
-  objectType:       ['Obyekt turi', 'OBYEKT TURI', 'OBJECT TYPE'],
-  serviceCode:      ['Tranzaksiya turi', 'XIZMAT KODI', 'SERVICE CODE'],
-  area:             ['Umumiy yer maydoni', 'MAYDON', 'AREA', 'YUZA'],
+  registrator:      ['Ijrochi registrator', 'Registrator', 'REGISTRATOR'],
 
-  // --- Muddat formulasi uchun qo'shimcha ustunlar (Excel: I,L,N,O,V,W) ---
-  // Har birida EXACT sarlavha BIRINCHI variant — mapper qisman moslikda
-  // boshqa maydon (objectType, area) tomonidan "o'g'irlanmasligi" uchun.
-  objectType2:        ['Obyekt turi 2'],                       // Excel L
-  priznak:            ['Priznak'],                             // Excel O
-  applicationSource:  ['Ariza manbasi'],                       // Excel N
-  cadastrePassportType: ['Kadastr passport olish turi'],       // Excel V
-  externalArea:       ['Tashqi o\'lchovlar bo\'yicha maydon', 'Tashqi o`lchovlar bo`yicha maydon'], // Excel W
+  // --- Ariza tasnifi ---
+  applicationType:    ['Ariza turi', 'ARIZA TURI', 'APPLICATION TYPE'],
+  applicationPurpose: ['Ariza maqsadi'],
+  objectType:         ['Obyekt turi', 'OBYEKT TURI', 'OBJECT TYPE'],
+  objectType2:        ['Obyekt turi 2'],
+  objectSubdivision:  ['Obyektning bo\'linish turi'],
+  serviceCode:        ['Tranzaksiya turi', 'XIZMAT KODI', 'SERVICE CODE'],
+  priznak:            ['Priznak'],
+  applicationSource:  ['Ariza manbasi'],
+  socialProtection:   ['Ijtimoiy ximoya', 'Ijtimoiy himoya'],
 
-  // Jarayon holati (filtrlash uchun) — standart hisobot ustunlari.
+  // --- Maydonlar (m²) ---
+  area:             ['Umumiy yer maydoni'],
+  externalArea:     ['Tashqi o\'lchovlar bo\'yicha maydon', 'Tashqi o`lchovlar bo`yicha maydon'],
+  buildingArea:     ['Qurilish ostidagi maydon'],
+
+  // --- Jarayon holati ---
   lastProcessRole:  ['Oxirgi jarayon roli'],
   lastProcessName:  ['Oxirgi jarayon nomi'],
+  rejectReason:     ['Rad sababi'],
+  note:             ['Rad etish izohi', 'IZOH', 'NOTE'],
 
+  // --- Sanalar ---
   registerDate:     ['Ariza kelib tushgan sana', 'QABUL SANASI', 'KIRISH SANASI', 'ARIZA SANASI'],
   deadlineDate:     ['IJRO MUDDATI', 'MUDDAT SANASI', 'DEADLINE'],
   completeDate:     ['Oxirgi jarayon sana', 'BAJARILGAN SANA', 'TUGATILGAN SANA'],
   issuedDate:       ['To\'lovga chiqarilgan sana', 'TO\'LOVGA CHIQARILGAN SANA'],
-  status:           ['Tizimdagi holati', 'HOLAT', 'ARIZA HOLATI', 'STATUS'],
   paymentDate:      ['To\'langan sana', 'TO\'LOV SANASI', 'PAYMENT DATE'],
-  paymentStatus:    ['To\'lov holati', 'TO\'LOV HOLATI', 'PAYMENT STATUS'],
-  note:             ['Rad etish izohi', 'IZOH', 'NOTE', 'QAYD'],
+  status:           ['Tizimdagi holati', 'HOLAT', 'ARIZA HOLATI', 'STATUS'],
 
-  // To'lov uchta qismdan iborat — har biri alohida o'qiladi va enrichRow'da yig'iladi.
+  // --- To'lov ---
+  paymentStatus:        ['To\'lov holati', 'TO\'LOV HOLATI', 'PAYMENT STATUS'],
+  cadastrePassportType: ['Kadastr passport olish turi'],
+  registrationType:     ['Ro\'yxatdan o\'tkazish turi'],
+  buildingOrLand:       ['Bino yoki yer registratsiya'],
+  addressAssignment:    ['Ko\'chmas mulk obyektiga manzil belgilash'],
+  cadastreInvoiceArea:  ['Kadastr invoys maydoni'],
+  regInvoiceArea:       ['Registratsiya invoys maydoni'],
   amountCadastre:   ['Kadastr to\'lov summasi'],
   amountReg:        ['Registratsiya to\'lov summasi'],
   amountAddr:       ['Manzil to\'lov summasi'],
   paidCadastre:     ['Kadastr to\'langan summasi'],
   paidReg:          ['Registratsiya to\'langan summasi'],
   paidAddr:         ['Manzil to\'langan summasi'],
-
-  // Umumiy zaxira maydonlari (3 qismli ustunlar topilmasa). toNumber endi
-  // mustahkamlangani uchun bu nomlar XATO katta son bermaydi (eng yomoni 0).
   amount:           ['Jami to\'lov summasi', 'Umumiy to\'lov summasi', 'To\'lov summasi'],
   paidAmount:       ['Jami to\'langan summa', 'Umumiy to\'langan summa', 'To\'langan summa']
+
+  // ESLATMA: quyidagi ustunlar ATAYLAB olinmaydi (kerak emas):
+  // Viloyat, STIR, PNFL, Foydalanuvchi turi va barcha vaqt-davomiyligi ustunlari
+  // (Tizim, Arxivchi, Filial..., Boshqarma..., DKP..., Jami, FMMI).
 };
 
 /** DATA varag'ida ishlatiladigan kanonik ustun tartibi (transformatsiyadan keyin). */
 var DATA_COLUMNS = [
-  'rowId', 'applicationNo', 'transactionNo', 'cadastreNo', 'customer', 'tin',
-  'district', 'engineer', 'chiefEngineer', 'registrator', 'applicationType', 'objectType', 'serviceCode',
-  'objectType2', 'priznak', 'applicationSource', 'cadastrePassportType', 'externalArea',
-  'lastProcessRole', 'lastProcessName',
-  'residency', 'area', 'registerDate', 'deadlineDate', 'deadlineDays', 'completeDate', 'issuedDate', 'status',
+  'rowId', 'applicationNo', 'transactionNo', 'cadastreNo', 'arizaCadastreNo',
+  'customer', 'owner', 'phone',
+  'district', 'mahallaCode', 'mahallaName',
+  'engineer', 'chiefEngineer', 'registrator',
+  'applicationType', 'applicationPurpose', 'objectType', 'objectType2', 'objectSubdivision',
+  'serviceCode', 'priznak', 'applicationSource', 'socialProtection',
+  'residency', 'area', 'externalArea', 'buildingArea',
+  'registerDate', 'deadlineDate', 'deadlineDays', 'completeDate', 'issuedDate', 'status',
   'deadlineStatus', 'remainingDays', 'progressPercent', 'colorStatus', 'issued',
+  'lastProcessRole', 'lastProcessName', 'rejectReason',
+  'cadastrePassportType', 'registrationType', 'buildingOrLand', 'addressAssignment',
+  'cadastreInvoiceArea', 'regInvoiceArea',
   'amount', 'paidAmount', 'debtAmount', 'paymentStatus', 'paymentDate', 'note',
   'year', 'month', 'importBatch', 'updatedAt'
 ];

@@ -71,18 +71,34 @@ var Dashboard = (function () {
       applicationNo: Utils.str(r.applicationNo),
       transactionNo: Utils.str(r.transactionNo),
       cadastreNo: Utils.str(r.cadastreNo),
+      arizaCadastreNo: Utils.str(r.arizaCadastreNo),
       customer: Utils.str(r.customer),
-      tin: Utils.str(r.tin),
+      owner: Utils.str(r.owner),
+      phone: Utils.str(r.phone),
       district: Utils.str(r.district),
+      mahallaCode: Utils.str(r.mahallaCode),
+      mahallaName: Utils.str(r.mahallaName),
       engineer: Utils.str(r.engineer),
       chiefEngineer: Utils.str(r.chiefEngineer),
       registrator: Utils.str(r.registrator),
       applicationType: Utils.str(r.applicationType),
+      applicationPurpose: Utils.str(r.applicationPurpose),
       objectType: Utils.str(r.objectType),
+      objectType2: Utils.str(r.objectType2),
+      objectSubdivision: Utils.str(r.objectSubdivision),
       serviceCode: Utils.str(r.serviceCode),
+      priznak: Utils.str(r.priznak),
       applicationSource: Utils.str(r.applicationSource),
+      socialProtection: Utils.str(r.socialProtection),
       lastProcessRole: Utils.str(r.lastProcessRole),
       lastProcessName: Utils.str(r.lastProcessName),
+      rejectReason: Utils.str(r.rejectReason),
+      cadastrePassportType: Utils.str(r.cadastrePassportType),
+      registrationType: Utils.str(r.registrationType),
+      buildingOrLand: Utils.str(r.buildingOrLand),
+      addressAssignment: Utils.str(r.addressAssignment),
+      buildingArea: Utils.toNumber(r.buildingArea),
+      externalArea: Utils.toNumber(r.externalArea),
       residency: Utils.str(r.residency),
       area: Utils.toNumber(r.area),
       registerDate: r.registerDate || '',
@@ -156,7 +172,8 @@ var Dashboard = (function () {
       if (f.cadastreNo && Utils.str(r.cadastreNo).indexOf(f.cadastreNo) === -1) return false;
       if (f.transactionNo && Utils.str(r.transactionNo).indexOf(f.transactionNo) === -1) return false;
       if (f.applicationNo && Utils.str(r.applicationNo).indexOf(f.applicationNo) === -1) return false;
-      if (f.tin && Utils.str(r.tin).indexOf(Utils.digitsOnly(f.tin)) === -1) return false;
+      if (f.mahallaName && Utils.normalize(r.mahallaName).indexOf(Utils.normalize(f.mahallaName)) === -1) return false;
+      if (f.applicationPurpose && Utils.normalize(r.applicationPurpose) !== Utils.normalize(f.applicationPurpose)) return false;
       if (f.customer && Utils.normalize(r.customer).indexOf(Utils.normalize(f.customer)) === -1) return false;
 
       if (f.dateFrom || f.dateTo) {
@@ -173,7 +190,7 @@ var Dashboard = (function () {
       if (search) {
         var hay = Utils.normalize([
           r.applicationNo, r.transactionNo, r.cadastreNo, r.customer,
-          r.tin, r.engineer, r.district
+          r.owner, r.engineer, r.district, r.mahallaName
         ].join(' '));
         if (hay.indexOf(search) === -1) return false;
       }
@@ -243,15 +260,28 @@ var Dashboard = (function () {
       applicationNo: r.applicationNo,
       transactionNo: r.transactionNo,
       cadastreNo: r.cadastreNo,
+      arizaCadastreNo: r.arizaCadastreNo,
       customer: r.customer,
-      tin: r.tin,
+      owner: r.owner,
+      phone: r.phone,
       district: r.district,
+      mahallaName: r.mahallaName,
       engineer: r.engineer,
+      chiefEngineer: r.chiefEngineer,
       registrator: r.registrator,
       applicationType: r.applicationType,
+      applicationPurpose: r.applicationPurpose,
       objectType: r.objectType,
+      objectType2: r.objectType2,
+      objectSubdivision: r.objectSubdivision,
+      socialProtection: r.socialProtection,
+      registrationType: r.registrationType,
+      buildingOrLand: r.buildingOrLand,
+      buildingArea: r.buildingArea,
+      externalArea: r.externalArea,
       lastProcessRole: r.lastProcessRole,
       lastProcessName: r.lastProcessName,
+      rejectReason: r.rejectReason,
       residency: r.residency,
       residencyLabel: RESIDENCY_LABEL[r.residency] || '',
       registerDate: Utils.formatDate(r.registerDate),
@@ -294,7 +324,7 @@ var Dashboard = (function () {
     for (var i = 0; i < rows.length && out.length < max; i++) {
       var r = rows[i];
       var hay = Utils.normalize([
-        r.applicationNo, r.transactionNo, r.cadastreNo, r.customer, r.tin
+        r.applicationNo, r.transactionNo, r.cadastreNo, r.customer, r.owner
       ].join(' '));
       if (hay.indexOf(t) !== -1) out.push(_toDisplay(r));
     }
@@ -309,7 +339,7 @@ var Dashboard = (function () {
   function filterOptions(user) {
     var rows = scopeFor(user, loadAll());
     var districts = {}, engineers = {}, types = {}, objectTypes = {};
-    var years = {}, registrators = {}, procRoles = {}, procNames = {}, chiefEngineers = {};
+    var years = {}, registrators = {}, procRoles = {}, procNames = {}, chiefEngineers = {}, purposes = {};
     for (var i = 0; i < rows.length; i++) {
       var r = rows[i];
       if (r.district) districts[r.district] = true;
@@ -317,6 +347,7 @@ var Dashboard = (function () {
       if (r.chiefEngineer) chiefEngineers[r.chiefEngineer] = (chiefEngineers[r.chiefEngineer] || r.district);
       if (r.registrator) registrators[r.registrator] = (registrators[r.registrator] || r.district);
       if (r.applicationType) types[r.applicationType] = true;
+      if (r.applicationPurpose) purposes[r.applicationPurpose] = true;
       if (r.objectType) objectTypes[r.objectType] = true;
       if (r.lastProcessRole) procRoles[r.lastProcessRole] = true;
       if (r.lastProcessName) procNames[r.lastProcessName] = true;
@@ -336,6 +367,7 @@ var Dashboard = (function () {
         return { name: e, district: registrators[e] };
       }).sort(function (a, b) { return a.name.localeCompare(b.name); }),
       applicationTypes: Object.keys(types).sort(),
+      applicationPurposes: Object.keys(purposes).sort(),
       objectTypes: Object.keys(objectTypes).sort(),
       lastProcessRoles: Object.keys(procRoles).sort(),
       lastProcessNames: Object.keys(procNames).sort(),

@@ -450,26 +450,42 @@ var BusinessLogic = (function () {
     rec.applicationNo = Utils.str(raw.applicationNo);
     rec.transactionNo = Utils.str(raw.transactionNo);
     rec.cadastreNo = Utils.str(raw.cadastreNo);
+    rec.arizaCadastreNo = Utils.str(raw.arizaCadastreNo);
     rec.customer = Utils.titleCase(raw.customer);
-    rec.tin = Utils.digitsOnly(raw.tin);
+    rec.owner = Utils.titleCase(raw.owner);
+    rec.phone = Utils.str(raw.phone);
     rec.district = Utils.str(raw.district);
+    rec.mahallaCode = Utils.str(raw.mahallaCode);
+    rec.mahallaName = Utils.str(raw.mahallaName);
     rec.engineer = Utils.str(raw.engineer);
     rec.chiefEngineer = Utils.str(raw.chiefEngineer);
     rec.registrator = Utils.str(raw.registrator);
     rec.applicationType = Utils.str(raw.applicationType);
+    rec.applicationPurpose = Utils.str(raw.applicationPurpose);
     rec.objectType = Utils.str(raw.objectType);
-    rec.serviceCode = Utils.str(raw.serviceCode);
-
-    // Muddat formulasi uchun qo'shimcha maydonlar (Excel: L,O,N,V,W).
     rec.objectType2 = Utils.str(raw.objectType2);
+    rec.objectSubdivision = Utils.str(raw.objectSubdivision);
+    rec.serviceCode = Utils.str(raw.serviceCode);
     rec.priznak = Utils.str(raw.priznak);
     rec.applicationSource = Utils.str(raw.applicationSource);
-    rec.cadastrePassportType = Utils.str(raw.cadastrePassportType);
+    rec.socialProtection = Utils.str(raw.socialProtection);
+
+    // Maydonlar (Excel formulasi: externalArea = W).
     rec.externalArea = Utils.toNumber(raw.externalArea);
+    rec.buildingArea = Utils.toNumber(raw.buildingArea);
+
+    // To'lov tasnifi.
+    rec.cadastrePassportType = Utils.str(raw.cadastrePassportType);
+    rec.registrationType = Utils.str(raw.registrationType);
+    rec.buildingOrLand = Utils.str(raw.buildingOrLand);
+    rec.addressAssignment = Utils.str(raw.addressAssignment);
+    rec.cadastreInvoiceArea = Utils.toNumber(raw.cadastreInvoiceArea);
+    rec.regInvoiceArea = Utils.toNumber(raw.regInvoiceArea);
 
     // Jarayon holati (filtrlash uchun).
     rec.lastProcessRole = Utils.str(raw.lastProcessRole);
     rec.lastProcessName = Utils.str(raw.lastProcessName);
+    rec.rejectReason = Utils.str(raw.rejectReason);
 
     // Status normalizatsiyasi.
     raw.statusRaw = raw.status;

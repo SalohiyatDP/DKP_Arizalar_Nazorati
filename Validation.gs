@@ -169,9 +169,9 @@ var Validation = (function () {
     filters = filters || {};
     var clean = {};
     var stringFields = ['district', 'engineer', 'registrator', 'applicationType',
-      'objectType', 'lastProcessRole', 'lastProcessName', 'residency', 'status',
-      'deadlineStatus', 'paymentStatus',
-      'cadastreNo', 'transactionNo', 'applicationNo', 'customer', 'tin', 'search'];
+      'applicationPurpose', 'objectType', 'lastProcessRole', 'lastProcessName',
+      'mahallaName', 'residency', 'status', 'deadlineStatus', 'paymentStatus',
+      'cadastreNo', 'transactionNo', 'applicationNo', 'customer', 'search'];
     for (var i = 0; i < stringFields.length; i++) {
       var f = stringFields[i];
       if (filters[f] != null && Utils.str(filters[f]) !== '') {
