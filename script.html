@@ -114,7 +114,6 @@ App._enterApp = function () {
   App.applyPermissions();
   Profile.loadProfile(State.user);
   Dash.load();
-  App.loadNotifications();
   if (State.user && State.user.mustChangePassword) App.openModal('forcePasswordModal');
 };
 
@@ -270,7 +269,6 @@ App.toggleTheme = function () {
   var next = cur === 'dark' ? 'light' : 'dark';
   App._applyTheme(next);
   Storage.set('dkp_theme', next);
-  if (typeof Dash !== 'undefined' && Dash.redraw) Dash.redraw();
 };
 
 /* --------------------------- SIDEBAR --------------------------------- */
@@ -327,27 +325,6 @@ App.onSearchInput = function (term) {
       box.classList.add('active');
     }).catch(function (e) { App.toast(e.message, 'error'); });
   }, 350);
-};
-
-/* ------------------------ BILDIRISHNOMALAR --------------------------- */
-App.loadNotifications = function () {
-  api('apiGetNotifications', State.token).then(function (list) {
-    var badge = document.getElementById('notifBadge');
-    var box = document.getElementById('notifList');
-    if (!list || !list.length) {
-      badge.classList.add('hidden');
-      box.innerHTML = '<div class="empty-state" style="padding:24px;">Yangi bildirishnoma yo\'q</div>';
-      return;
-    }
-    badge.textContent = list.length;
-    badge.classList.remove('hidden');
-    box.innerHTML = list.map(function (n) {
-      return '<div class="dropdown-item"><span class="material-icons status-' +
-        (n.level === 'danger' ? 'red' : n.level === 'warning' ? 'orange' : 'green') +
-        '">' + esc(n.icon) + '</span><div><strong>' + esc(n.title) +
-        '</strong><br><small>' + esc(n.message) + '</small></div></div>';
-    }).join('');
-  }).catch(function () {});
 };
 
 /* ----------------------------- LOGOUT -------------------------------- */

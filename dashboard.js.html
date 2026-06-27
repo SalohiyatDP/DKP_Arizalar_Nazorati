@@ -1,59 +1,82 @@
 <!-- dashboard.js.html — Dashboard va boshqa view'lar logikasi -->
 <script>
-/* ===================== GOOGLE CHARTS TAYYORLASH ===================== */
-var ChartsReady = new Promise(function (resolve) {
-  if (window.google && google.charts) {
-    google.charts.load('current', { packages: ['corechart', 'bar'] });
-    google.charts.setOnLoadCallback(resolve);
-  } else { resolve(); }
-});
-
-/** Joriy mavzu uchun grafik ranglari. */
-function chartTheme() {
-  var dark = document.documentElement.getAttribute('data-theme') === 'dark';
-  return {
-    backgroundColor: 'transparent',
-    legend: { textStyle: { color: dark ? '#e8eaed' : '#5f6368' } },
-    titleTextStyle: { color: dark ? '#e8eaed' : '#202124' },
-    hAxis: { textStyle: { color: dark ? '#9aa0a6' : '#5f6368' }, gridlines: { color: dark ? '#3c4043' : '#e8eaed' } },
-    vAxis: { textStyle: { color: dark ? '#9aa0a6' : '#5f6368' }, gridlines: { color: dark ? '#3c4043' : '#e8eaed' } },
-    chartArea: { width: '85%', height: '75%' }
-  };
-}
-
 /* ===================== GRID (universal jadval) =====================
- * Har qanday jadval uchun: 50 qatorli sahifalash + Excelga eksport.
+ * Har qanday jadval uchun: 50 qatorli sahifalash + ustun bo'yicha filtrlash
+ * + Excelga eksport. Filtr qatori thead'da bo'lib, faqat tbody yangilanadi
+ * (filtr inputlarining fokusi yo'qolmaydi).
  * columns: [{label, html?}]; rows: [[cell, ...], ...] (cell HTML bo'lishi mumkin)
+ * opts: {pageSize, exportName, filterable=true}
  */
 var Grid = { _state: {}, PAGE_SIZE: 50 };
 
 Grid.render = function (tableId, columns, rows, opts) {
   opts = opts || {};
   rows = rows || [];
-  var st = Grid._state[tableId] || { page: 1 };
+  var st = Grid._state[tableId] || {};
   Grid._state[tableId] = st;
-  st.columns = columns; st.rows = rows;
+  st.columns = columns;
+  st.allRows = rows;
+  st.filters = {};                 // yangi ma'lumot — filtrlar tozalanadi
+  st.page = 1;
   st.pageSize = opts.pageSize || Grid.PAGE_SIZE;
   st.exportName = opts.exportName || tableId;
-  var total = rows.length;
+  st.filterable = opts.filterable !== false;
+
+  var t = document.getElementById(tableId);
+  if (!t) return;
+
+  var headRow = '<tr>' + columns.map(function (c) {
+    return '<th>' + esc(c.label != null ? c.label : c) + '</th>';
+  }).join('') + '</tr>';
+  var filterRow = st.filterable ? '<tr class="grid-filter">' + columns.map(function (c, ci) {
+    return '<th><input type="text" class="grid-fi" placeholder="filtr…" ' +
+      'oninput="Grid.filter(\'' + tableId + '\',' + ci + ',this.value)"></th>';
+  }).join('') + '</tr>' : '';
+
+  // thead bir marta yoziladi, keyin faqat tbody yangilanadi (fokus saqlanadi).
+  t.innerHTML = '<thead>' + headRow + filterRow + '</thead><tbody></tbody>';
+  Grid._renderBody(tableId);
+};
+
+/** Joriy filtrlarga mos qatorlar. */
+Grid._view = function (st) {
+  var keys = [];
+  for (var k in st.filters) { if (st.filters.hasOwnProperty(k) && st.filters[k]) keys.push(k); }
+  if (!keys.length) return st.allRows;
+  return st.allRows.filter(function (r) {
+    for (var i = 0; i < keys.length; i++) {
+      var ci = keys[i];
+      var col = st.columns[ci] || {};
+      var cell = r[ci];
+      var text = String(cell == null ? '' : cell);
+      if (col.html) text = text.replace(/<[^>]*>/g, ' ');
+      if (text.toLowerCase().indexOf(st.filters[ci].toLowerCase()) === -1) return false;
+    }
+    return true;
+  });
+};
+
+Grid._renderBody = function (tableId) {
+  var st = Grid._state[tableId]; if (!st) return;
+  var t = document.getElementById(tableId); if (!t) return;
+  var columns = st.columns;
+  var view = Grid._view(st);
+  var total = view.length;
   var pages = Math.max(1, Math.ceil(total / st.pageSize));
   if (st.page > pages) st.page = pages;
   if (st.page < 1) st.page = 1;
   var start = (st.page - 1) * st.pageSize;
-  var pageRows = rows.slice(start, start + st.pageSize);
+  var pageRows = view.slice(start, start + st.pageSize);
 
-  var thead = '<thead><tr>' + columns.map(function (c) {
-    return '<th>' + esc(c.label != null ? c.label : c) + '</th>';
-  }).join('') + '</tr></thead>';
-  var tbody = '<tbody>' + (pageRows.length ? pageRows.map(function (r) {
+  var bodyHtml = pageRows.length ? pageRows.map(function (r) {
     return '<tr>' + r.map(function (cell, ci) {
       var col = columns[ci] || {};
       return '<td>' + (col.html ? (cell == null ? '' : cell) : esc(cell)) + '</td>';
     }).join('') + '</tr>';
   }).join('') : '<tr><td colspan="' + columns.length +
-    '"><div class="empty-state" style="padding:24px">Ma\'lumot yo\'q</div></td></tr>') + '</tbody>';
-  var t = document.getElementById(tableId);
-  if (t) t.innerHTML = thead + tbody;
+    '"><div class="empty-state" style="padding:24px">Ma\'lumot yo\'q</div></td></tr>';
+  var tb = t.querySelector('tbody');
+  if (tb) tb.innerHTML = bodyHtml;
 
   var ctrl = document.getElementById(tableId + '_ctrl');
   if (ctrl) {
@@ -71,17 +94,25 @@ Grid.render = function (tableId, columns, rows, opts) {
   }
 };
 
+Grid.filter = function (tableId, colIndex, value) {
+  var st = Grid._state[tableId]; if (!st) return;
+  st.filters[colIndex] = value;
+  st.page = 1;
+  Grid._renderBody(tableId);   // faqat tbody — filtr inputi fokusi saqlanadi
+};
+
 Grid.go = function (tableId, page) {
   var st = Grid._state[tableId]; if (!st) return;
   st.page = page;
-  Grid.render(tableId, st.columns, st.rows, { pageSize: st.pageSize, exportName: st.exportName });
+  Grid._renderBody(tableId);
 };
 
 Grid.exportExcel = function (tableId) {
   var st = Grid._state[tableId]; if (!st) return;
   function strip(s) { return String(s == null ? '' : s).replace(/<[^>]*>/g, '').replace(/&nbsp;/g, ' ').replace(/&amp;/g, '&').trim(); }
   var headers = st.columns.map(function (c) { return c.label != null ? c.label : c; });
-  var aoa = [headers].concat(st.rows.map(function (r) { return r.map(strip); }));
+  var view = Grid._view(st);    // eksport — filtrlangan ko'rinishni oladi
+  var aoa = [headers].concat(view.map(function (r) { return r.map(strip); }));
   var name = (st.exportName || 'export') + '_' +
     (new Date()).toISOString().slice(0, 19).replace(/[:T]/g, '');
   if (typeof XLSX !== 'undefined') {
@@ -289,30 +320,6 @@ Dash.exportSummary = function () {
     setTimeout(function () { URL.revokeObjectURL(url); }, 1000);
   }
 };
-
-/* -------------------------- SO'NGGI FAOLLIK -------------------------- */
-Dash._renderRecent = function (list) {
-  var box = document.getElementById('recentActivities');
-  if (!list || !list.length) { box.innerHTML = '<div class="empty-state">Faollik yo\'q</div>'; return; }
-  box.innerHTML = list.map(function (r) {
-    return '<div class="flex gap-12" style="padding:10px 0; border-bottom:1px solid var(--divider);">' +
-      '<span class="dot" style="background:' + r.colorHex + '"></span>' +
-      '<div style="flex:1"><strong>' + esc(r.applicationNo) + '</strong> · ' + esc(r.customer) +
-      '<br><small style="color:var(--text-secondary)">' + esc(r.engineer) + ' · ' + esc(r.district) +
-      ' · ' + esc(r.registerDate) + '</small></div>' +
-      '<span class="badge" style="background:' + r.colorHex + '">' + esc(r.deadlineStatusLabel) + '</span></div>';
-  }).join('');
-};
-
-
-/* ----------------------------- GRAFIKLAR ----------------------------- */
-/* Boshqaruv paneli grafiklari (Holat taqsimoti, Turar/Noturar, To'lov holati,
- * Top muhandislar) talab bo'yicha olib tashlandi. Mavzu almashganda chaqiriladigan
- * redraw endi hech narsa qilmaydi. */
-Dash._renderCharts = function () {};
-
-Dash.redraw = function () {};
-
 
 /* ============================ ARIZALAR =============================== */
 var Apps = {};
@@ -904,7 +911,7 @@ ImportUI.uploadAndImport = function () {
     ImportUI._renderReport(rep);
     if (rep.success) {
       App.toast('Fayldan import: ' + rep.validRows + '/' + rep.totalRows + ' qator', 'success');
-      Dash.load(true); ImportUI.init(); App.loadNotifications();
+      Dash.load(true); ImportUI.init();
       document.getElementById('importFileInput').value = '';
       ImportUI._selectedFile = null;
     } else {
@@ -926,7 +933,7 @@ ImportUI.run = function () {
     ImportUI._renderReport(rep);
     if (rep.success) {
       App.toast('Import muvaffaqiyatli: ' + rep.validRows + '/' + rep.totalRows, 'success');
-      Dash.load(true); ImportUI.init(); App.loadNotifications();
+      Dash.load(true); ImportUI.init();
     } else {
       App.toast('Import xatosi: ' + rep.error, 'error');
     }

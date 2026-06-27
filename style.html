@@ -175,6 +175,15 @@
   .btn .material-icons { font-size: 18px; }
   .btn-block { width: 100%; justify-content: center; }
 
+  /* Jadval ustun filtri (Grid) */
+  .data-table thead tr.grid-filter th { padding: 4px 6px; background: var(--bg-surface-2); }
+  .grid-fi {
+    width: 100%; box-sizing: border-box; padding: 5px 8px; font-size: 12px;
+    border: 1px solid var(--border-color); border-radius: 6px;
+    background: var(--bg-surface); color: var(--text-primary); font-family: inherit;
+  }
+  .grid-fi:focus { outline: none; border-color: var(--md-primary); }
+
   /* ----------------------------- FORMALAR ------------------------------- */
   .field { margin-bottom: 16px; }
   .field label { display: block; font-size: 13px; font-weight: 500; margin-bottom: 6px; color: var(--text-secondary); }
@@ -285,6 +294,9 @@
     .kpi .value { font-size: 20px; }
     #toastContainer { left: 16px; right: 16px; }
     .toast { min-width: auto; }
+    .brand span { display: none; }
+    .kpi-row { grid-template-columns: 1fr 1fr; }
+    .modal.wide { width: 96vw; }
   }
 
   /* --------------------------- CHOP ETISH ------------------------------- */

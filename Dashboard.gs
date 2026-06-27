@@ -65,68 +65,6 @@ var Dashboard = (function () {
   }
 
   /**
-   * O'qilgan yozuvni standart tiplarga keltiradi.
-   * @param {Object} r
-   * @returns {Object}
-   */
-  function _normalizeRecord(r) {
-    return {
-      rowId: Utils.str(r.rowId),
-      applicationNo: Utils.str(r.applicationNo),
-      transactionNo: Utils.str(r.transactionNo),
-      cadastreNo: Utils.str(r.cadastreNo),
-      arizaCadastreNo: Utils.str(r.arizaCadastreNo),
-      customer: Utils.str(r.customer),
-      owner: Utils.str(r.owner),
-      phone: Utils.str(r.phone),
-      district: Utils.str(r.district),
-      mahallaCode: Utils.str(r.mahallaCode),
-      mahallaName: Utils.str(r.mahallaName),
-      engineer: Utils.str(r.engineer),
-      chiefEngineer: Utils.str(r.chiefEngineer),
-      registrator: Utils.str(r.registrator),
-      applicationType: Utils.str(r.applicationType),
-      applicationPurpose: Utils.str(r.applicationPurpose),
-      objectType: Utils.str(r.objectType),
-      objectType2: Utils.str(r.objectType2),
-      objectSubdivision: Utils.str(r.objectSubdivision),
-      serviceCode: Utils.str(r.serviceCode),
-      priznak: Utils.str(r.priznak),
-      applicationSource: Utils.str(r.applicationSource),
-      socialProtection: Utils.str(r.socialProtection),
-      lastProcessRole: Utils.str(r.lastProcessRole),
-      lastProcessName: Utils.str(r.lastProcessName),
-      rejectReason: Utils.str(r.rejectReason),
-      cadastrePassportType: Utils.str(r.cadastrePassportType),
-      registrationType: Utils.str(r.registrationType),
-      buildingOrLand: Utils.str(r.buildingOrLand),
-      addressAssignment: Utils.str(r.addressAssignment),
-      buildingArea: Utils.toNumber(r.buildingArea),
-      externalArea: Utils.toNumber(r.externalArea),
-      residency: Utils.str(r.residency),
-      area: Utils.toNumber(r.area),
-      registerDate: r.registerDate || '',
-      deadlineDate: r.deadlineDate || '',
-      completeDate: r.completeDate || '',
-      issuedDate: r.issuedDate || '',
-      issued: (r.issued === true || r.issued === 'true' || r.issued === 'TRUE'),
-      status: Utils.str(r.status),
-      deadlineStatus: Utils.str(r.deadlineStatus),
-      remainingDays: Utils.toNumber(r.remainingDays),
-      progressPercent: Utils.toNumber(r.progressPercent),
-      colorStatus: Utils.str(r.colorStatus),
-      amount: Utils.toNumber(r.amount),
-      paidAmount: Utils.toNumber(r.paidAmount),
-      debtAmount: Utils.toNumber(r.debtAmount),
-      paymentStatus: Utils.str(r.paymentStatus),
-      paymentDate: r.paymentDate || '',
-      note: Utils.str(r.note),
-      year: Utils.toNumber(r.year),
-      month: Utils.toNumber(r.month)
-    };
-  }
-
-  /**
    * Foydalanuvchi roliga ko'ra yozuvlarni chegaralaydi (server-side scope).
    * @param {Object} user {role, region, district, fullName, employeeId, username}
    * @param {Array<Object>} rows
@@ -458,28 +396,6 @@ var Dashboard = (function () {
         waitingCount: fin.summary.waitingCount,
         collectionRate: fin.summary.collectionRate
       },
-      charts: {
-        statusDistribution: [
-          { label: 'Bajarilgan', value: stats.summary.completed, color: COLOR_HEX.GREEN },
-          { label: 'Jarayonda', value: stats.summary.inProgress, color: COLOR_HEX.YELLOW },
-          { label: 'Muddati o\'tgan', value: stats.summary.expired, color: COLOR_HEX.BLACK }
-        ],
-        residency: [
-          { label: 'Turar joy', value: stats.summary.residential },
-          { label: 'Noturar joy', value: stats.summary.nonResidential }
-        ],
-        payment: [
-          { label: 'To\'langan', value: stats.summary.paid },
-          { label: 'Qisman', value: stats.summary.partial },
-          { label: 'Kutilmoqda', value: stats.summary.waiting },
-          { label: 'To\'lanmagan', value: stats.summary.unpaid }
-        ],
-        monthlyTrend: fin.monthly.map(function (m) {
-          return { label: m.label, applications: m.count, income: m.paid };
-        }),
-        topEngineers: stats.engineerRanking.slice(0, 10),
-        topDistricts: stats.districtRanking.slice(0, 10)
-      },
       rankings: {
         engineers: stats.engineerRanking.slice(0, 20),
         districts: stats.districtRanking.slice(0, 20)
@@ -492,7 +408,6 @@ var Dashboard = (function () {
         byRegistrator: fin.byRegistrator.slice(0, 1000),
         pending: fin.pending.slice(0, 3000)
       },
-      recentActivities: _recentActivities(viewRows),
       summaryTable: _buildSummaryTable(roleRows)
     };
   }
@@ -633,28 +548,6 @@ var Dashboard = (function () {
   function _currentPeriodLabel() {
     var now = new Date();
     return (MONTH_NAMES_UZ[now.getMonth()] || '') + ' ' + now.getFullYear() + ' (joriy oy)';
-  }
-
-  function _recentActivities(rows) {
-    var sorted = rows.slice().sort(function (a, b) {
-      var ad = Utils.toDate(a.registerDate);
-      var bd = Utils.toDate(b.registerDate);
-      var at = ad ? ad.getTime() : 0;
-      var bt = bd ? bd.getTime() : 0;
-      return bt - at;
-    });
-    return sorted.slice(0, 15).map(function (r) {
-      return {
-        applicationNo: r.transactionNo || r.applicationNo || r.cadastreNo,
-        customer: r.customer,
-        engineer: r.engineer,
-        district: r.district,
-        registerDate: Utils.formatDate(r.registerDate),
-        deadlineStatus: r.deadlineStatus,
-        deadlineStatusLabel: DEADLINE_STATUS_LABEL[r.deadlineStatus] || '',
-        colorHex: COLOR_HEX[r.colorStatus] || '#9e9e9e'
-      };
-    });
   }
 
   /**
