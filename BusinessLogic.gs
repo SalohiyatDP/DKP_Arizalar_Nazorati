@@ -454,6 +454,7 @@ var BusinessLogic = (function () {
     rec.tin = Utils.digitsOnly(raw.tin);
     rec.district = Utils.str(raw.district);
     rec.engineer = Utils.str(raw.engineer);
+    rec.chiefEngineer = Utils.str(raw.chiefEngineer);
     rec.registrator = Utils.str(raw.registrator);
     rec.applicationType = Utils.str(raw.applicationType);
     rec.objectType = Utils.str(raw.objectType);

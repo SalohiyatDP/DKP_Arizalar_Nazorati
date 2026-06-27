@@ -34,6 +34,18 @@ var Login = (function () {
     var sh = Repository.sheet(SHEETS.LOGIN, true);
     if (sh.getLastRow() === 0) {
       Repository.writeHeaders(SHEETS.LOGIN, LOGIN_COLUMNS);
+      return;
+    }
+    // Self-heal: LOGIN_COLUMNS'da bor, lekin varaqda yo'q ustunlarni qo'shamiz
+    // (masalan, yangi 'fullName'). Mavjud ma'lumotlar buzilmaydi.
+    var headers = sh.getRange(1, 1, 1, sh.getLastColumn()).getValues()[0]
+      .map(function (h) { return Utils.str(h); });
+    var missing = [];
+    for (var i = 0; i < LOGIN_COLUMNS.length; i++) {
+      if (headers.indexOf(LOGIN_COLUMNS[i]) === -1) missing.push(LOGIN_COLUMNS[i]);
+    }
+    if (missing.length) {
+      sh.getRange(1, headers.length + 1, 1, missing.length).setValues([missing]);
     }
   }
 
@@ -116,9 +128,9 @@ var Login = (function () {
    * @returns {Object}
    */
   function _toSessionUser(user) {
-    var fullName = user.username;
+    var fullName = Utils.str(user.fullName) || user.username;
     try {
-      if (user.employeeId && Repository.exists(SHEETS.EMPLOYEES)) {
+      if (fullName === user.username && user.employeeId && Repository.exists(SHEETS.EMPLOYEES)) {
         var emps = Repository.readObjects(SHEETS.EMPLOYEES);
         for (var i = 0; i < emps.rows.length; i++) {
           if (Utils.str(emps.rows[i].employeeId) === Utils.str(user.employeeId) ||
@@ -314,6 +326,7 @@ var Login = (function () {
       region: '',
       district: Utils.str(userData.district),
       employeeId: Utils.str(userData.employeeId),
+      fullName: Utils.str(userData.fullName),
       status: 'active',
       mustChangePassword: false,
       passwordHistory: '[]',
@@ -344,6 +357,7 @@ var Login = (function () {
     var allowed = {};
     if (updates.role) allowed.role = Utils.str(updates.role).toUpperCase();
     if (updates.district != null) allowed.district = Utils.str(updates.district);
+    if (updates.fullName != null) allowed.fullName = Utils.str(updates.fullName);
     if (updates.status) allowed.status = Utils.str(updates.status);
     if (updates.employeeId != null) allowed.employeeId = Utils.str(updates.employeeId);
     // Admin parolni bevosita o'rnatishi/qayta berishi mumkin (ochiq saqlanadi).
@@ -396,6 +410,7 @@ var Login = (function () {
       return {
         username: u.username,
         password: Utils.str(u.passwordHash),
+        fullName: Utils.str(u.fullName),
         role: u.role,
         roleLabel: ROLE_LABEL[Utils.str(u.role).toUpperCase()] || u.role,
         district: u.district,

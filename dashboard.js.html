@@ -637,11 +637,12 @@ var UsersUI = {};
 UsersUI.load = function () {
   api('apiListUsers', State.token).then(function (list) {
     var t = document.getElementById('usersTable');
-    t.innerHTML = '<thead><tr><th>Login</th><th>Parol</th><th>Rol</th><th>Tuman</th>' +
+    t.innerHTML = '<thead><tr><th>Login</th><th>Parol</th><th>F.I.O.</th><th>Rol</th><th>Tuman</th>' +
       '<th>Holat</th><th>Oxirgi kirish</th><th>Amallar</th></tr></thead><tbody>' +
       list.map(function (u) {
         return '<tr><td><strong>' + esc(u.username) + '</strong></td>' +
           '<td><code>' + esc(u.password || '—') + '</code></td>' +
+          '<td>' + esc(u.fullName || '—') + '</td>' +
           '<td>' + esc(u.roleLabel) + '</td>' +
           '<td>' + esc(u.district || '—') + '</td>' +
           '<td><span class="badge" style="background:' +
@@ -656,25 +657,76 @@ UsersUI.load = function () {
 };
 
 UsersUI.openCreate = function () {
-  var roles = [['ADMIN', 'Administrator'], ['CHIEF', 'Bosh muhandis'], ['ENGINEER', 'Kadastr muhandis']];
-  var body = '<div class="field"><label>Login</label><input class="input" id="nuUsername"></div>' +
-    '<div class="field"><label>Parol (bo\'sh — avtomatik)</label><input class="input" id="nuPassword"></div>' +
-    '<div class="field"><label>Rol</label><select class="select" id="nuRole">' +
-    roles.map(function (r) { return '<option value="' + r[0] + '">' + r[1] + '</option>'; }).join('') + '</select></div>' +
-    '<div class="field"><label>Tuman (bosh/kadastr muhandis uchun shart)</label><input class="input" id="nuDistrict"></div>' +
-    '<div class="field"><label>Xodim ID</label><input class="input" id="nuEmployeeId"></div>';
-  App.showModal('Yangi foydalanuvchi', body,
-    '<button class="btn" onclick="App.closeModal(\'genericModal\')">Bekor</button>' +
-    '<button class="btn btn-primary" onclick="UsersUI.create()">Yaratish</button>');
+  function build(opts) {
+    UsersUI._opts = opts;
+    var roles = [['ADMIN', 'Administrator'], ['CHIEF', 'Bosh muhandis'], ['ENGINEER', 'Kadastr muhandis']];
+    var districts = (opts.districts || []).map(function (d) { return d.name; });
+    var body =
+      '<div class="field"><label>Rol</label><select class="select" id="nuRole" onchange="UsersUI._refreshPersons()">' +
+        roles.map(function (r) { return '<option value="' + r[0] + '">' + r[1] + '</option>'; }).join('') + '</select></div>' +
+      '<div class="field"><label>Tuman</label><select class="select" id="nuDistrict" onchange="UsersUI._refreshPersons()">' +
+        '<option value="">\u2014 tanlang \u2014</option>' +
+        districts.map(function (d) { return '<option value="' + esc(d) + '">' + esc(d) + '</option>'; }).join('') + '</select></div>' +
+      '<div class="field"><label>Xodim (F.I.O.)</label><select class="select" id="nuPerson" onchange="UsersUI._onPerson()">' +
+        '<option value="">\u2014 avval tuman va rolni tanlang \u2014</option></select></div>' +
+      '<div class="field"><label>Login</label><input class="input" id="nuUsername" placeholder="masalan: kosonsoy.bosh"></div>' +
+      '<div class="field"><label>Parol (bo\'sh \u2014 avtomatik)</label><input class="input" id="nuPassword"></div>' +
+      '<div class="field"><label>Xodim ID (ixtiyoriy)</label><input class="input" id="nuEmployeeId"></div>';
+    App.showModal('Yangi foydalanuvchi', body,
+      '<button class="btn" onclick="App.closeModal(\'genericModal\')">Bekor</button>' +
+      '<button class="btn btn-primary" onclick="UsersUI.create()">Yaratish</button>');
+    UsersUI._refreshPersons();
+  }
+  if (State.filterOptions) build(State.filterOptions);
+  else api('apiFilterOptions', State.token).then(function (opts) { State.filterOptions = opts; build(opts); })
+    .catch(function (e) { App.toast(e.message, 'error'); });
+};
+
+/** Rol/tuman tanlanganda — mos xodimlar (bosh yoki kadastr muhandis) ro'yxatini to'ldiradi. */
+UsersUI._refreshPersons = function () {
+  var role = (document.getElementById('nuRole') || {}).value;
+  var district = (document.getElementById('nuDistrict') || {}).value;
+  var sel = document.getElementById('nuPerson');
+  if (!sel || !UsersUI._opts) return;
+  if (role === 'ADMIN') {
+    sel.innerHTML = '<option value="">\u2014 admin uchun shart emas \u2014</option>';
+    sel.disabled = true; return;
+  }
+  sel.disabled = false;
+  if (!district) { sel.innerHTML = '<option value="">\u2014 avval tumanni tanlang \u2014</option>'; return; }
+  var list = (role === 'CHIEF') ? (UsersUI._opts.chiefEngineers || []) : (UsersUI._opts.engineers || []);
+  list = list.filter(function (p) { return p.district === district; });
+  if (!list.length) {
+    sel.innerHTML = '<option value="">\u2014 bu tumanda topilmadi (qo\'lda Login kiriting) \u2014</option>';
+    return;
+  }
+  sel.innerHTML = '<option value="">\u2014 tanlang \u2014</option>' +
+    list.map(function (p) { return '<option value="' + esc(p.name) + '">' + esc(p.name) + '</option>'; }).join('');
+};
+
+/** Ismdan login taklif qiladi. */
+UsersUI._slug = function (name) {
+  return String(name || '').toLowerCase()
+    .replace(/['\u2018\u2019`\u02bb\u02bc]/g, '')
+    .replace(/[^a-z0-9]+/g, '.')
+    .replace(/^\.+|\.+$/g, '').slice(0, 28);
+};
+
+UsersUI._onPerson = function () {
+  var name = document.getElementById('nuPerson').value;
+  var u = document.getElementById('nuUsername');
+  if (name && u && !u.value.trim()) u.value = UsersUI._slug(name);
 };
 
 UsersUI.create = function () {
-  function v(id) { return document.getElementById(id).value.trim(); }
-  var data = { username: v('nuUsername'), password: v('nuPassword'), role: v('nuRole'),
-    district: v('nuDistrict'), employeeId: v('nuEmployeeId') };
+  function v(id) { var el = document.getElementById(id); return el ? el.value.trim() : ''; }
+  var data = {
+    username: v('nuUsername'), password: v('nuPassword'), role: v('nuRole'),
+    district: v('nuDistrict'), fullName: v('nuPerson'), employeeId: v('nuEmployeeId')
+  };
   api('apiCreateUser', State.token, State.csrf, data).then(function (res) {
     App.closeModal('genericModal');
-    var msg = 'Foydalanuvchi yaratildi.';
+    var msg = (data.fullName ? data.fullName + ' ' : '') + 'uchun hisob yaratildi.';
     if (res.generatedPassword) msg += ' Parol: ' + res.generatedPassword;
     App.toast(msg, 'success');
     UsersUI.load();

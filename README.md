@@ -86,13 +86,61 @@ Asosiy funksiyalar (Excel `WORKDAY` / `NETWORKDAYS` ekvivalentlari JavaScriptda 
 
 ---
 
+## ⏱️ Ariza muddatini hisoblash (`MUDDAT_QOIDALARI` varag'i)
+
+Ariza ijro muddati (ish kunlari) **ustuvor qoidalar** bo'yicha avtomatik hisoblanadi
+(Excel formulasining aniq ekvivalenti — `BusinessLogic.computeDeadlineDays`). Qoidalar
+yuqoridan pastga tekshiriladi — **birinchi mos kelgani** ishlatiladi.
+
+Qiymatlar **`MUDDAT_QOIDALARI`** varag'ida saqlanadi (tizim avtomatik yaratadi va standart
+qiymatlar bilan to'ldiradi). Varaqni "Ariza muddati" bo'limidan (UI) yoki to'g'ridan-to'g'ri
+tahrirlash mumkin. Faqat **kun sonini** o'zgartirasiz; tuzilma (shartlar tartibi) va maydon
+chegaralari kodda turadi.
+
+**Varaq ustunlari:** `KALIT` · `TAVSIF` · `QIYMAT (ish kuni)`
+
+Standart qoidalar va qiymatlari (formuladan olingan):
+
+| KALIT | Shart | QIYMAT |
+|-------|-------|--------|
+| `manba:Kadastr muhandisi` | Ariza manbasi = "Kadastr muhandisi" | 3 |
+| `manba:UZKAD` | Ariza manbasi = "UZKAD" | 5 |
+| `flag:FREE` | Kadastr passport olish turi = "FREE" | 5 |
+| `ariza:Registratsiya (tashqi - UZKAD da bor)` | Ariza turi (aniq moslik) | 1 |
+| `ariza:Avtoyo'l va suv xo'jaligi obyektining kadastr pasportini shakllantirish va ro'yxatga olish` | Ariza turi | 7 |
+| `ariza:Notarius uchun ma'lumotnoma (uz)` | Ariza turi | 1 |
+| `ariza:Qurilishi tugallangan ko'chmas mulkni foydalanishga qabul qilish` | Ariza turi | 10 |
+| `turar:yer_maydoni` | Turar obyekt/kompozit + Obyekt turi 2 = "Turar yer maydoni" | 7 |
+| `turar:default` | Turar obyekt/kompozit (boshqa) | 10 |
+| `noturar:daraxtlar` | Noturar + Priznak = "Ko'p yillik daraxtlar xizmati" | 15 |
+| `noturar:yer_yoki_davlat` | Noturar yer maydoni / Davlat ijara yer uchastkasi | 7 |
+| `umumiy:turar` | Umumiy foydalanish — "Turar" deb aniqlangan | 10 |
+| `maydon:<100` | Maydon < 100 m² | 10 |
+| `maydon:<=1000` | Maydon 100–1000 m² | 12 |
+| `maydon:<=5000` | Maydon 1000–5000 m² | 17 |
+| `maydon:<=15000` | Maydon 5000–15000 m² | 22 |
+| `maydon:<=50000` | Maydon 15000–50000 m² | 28 |
+| `maydon:>50000` | Maydon > 50000 m² | 37 |
+| `default` | Hech qaysi qoidaga mos kelmasa | 10 |
+
+**Yangi aniq qoida qo'shish:** UI orqali yoki varaqda `manba:<qiymat>`, `ariza:<qiymat>` yoki
+`flag:<qiymat>` ko'rinishida yangi qator qo'shing. `turar:*`, `noturar:*`, `maydon:*` va
+`default` — tuzilmaviy kalitlar (o'chirilmaydi, faqat qiymati o'zgartiriladi).
+
+> Formula ishlashi uchun standart hisobot fayli quyidagi ustunlarni saqlashi shart:
+> `Ariza turi`, `Obyekt turi 2`, `Priznak`, `Ariza manbasi`, `Kadastr passport olish turi`,
+> `Tashqi o'lchovlar bo'yicha maydon`.
+
+---
+
 ## 🗂️ Spreadsheet varaqlari
 
-Tizim **mavjud varaqlardan** foydalanadi va ularni qayta yaratmaydi:
+Tizim quyidagi varaqlardan foydalanadi. Mavjud bo'lmasa — **avtomatik yaratiladi**
+(`MUDDAT_QOIDALARI`, `HOLIDAYS`, `SERVICE_RULES` standart qiymatlar bilan to'ldiriladi):
 
 `DASHBOARD`, `HISOBOT`, `DATA`, `STATISTICS`, `FINANCE`, `LOGIN`, `EMPLOYEES`,
-`SETTINGS`, `HOLIDAYS`, `SERVICE_RULES`, `AREA_RULES`, `EXPORT`, `BACKUP`,
-`IMPORT_LOG`, `LOGIN_LOG`, `ACTION_LOG`, `MONTHLY_STATS`, `CACHE`
+`SETTINGS`, `HOLIDAYS`, `SERVICE_RULES`, `AREA_RULES`, `MUDDAT_QOIDALARI`, `EXPORT`,
+`BACKUP`, `IMPORT_LOG`, `LOGIN_LOG`, `ACTION_LOG`, `MONTHLY_STATS`, `CACHE`
 
 > **HISOBOT** — asosiy ma'lumot manbai. Ustun sarlavhalari import vaqtida avtomatik
 > moslashtiriladi (`Repository.hisobotHeaderMapper`), shuning uchun turli nomlanishlarni qo'llab-quvvatlaydi.

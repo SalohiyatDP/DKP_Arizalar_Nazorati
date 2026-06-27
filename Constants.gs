@@ -43,6 +43,7 @@ var HISOBOT_FIELDS = {
   tin:              ['STIR', 'INN', 'TIN'],
   district:         ['Tuman', 'TUMAN', 'DISTRICT'],
   engineer:         ['Ijrochi muhandis', 'MUHANDIS', 'ENGINEER', 'IJROCHI MUHANDIS'],
+  chiefEngineer:    ['Ijrochi bosh muhandis'],
   registrator:      ['Ijrochi registrator', 'REGISTRATOR', 'Registrator'],
   applicationType:  ['Ariza turi', 'ARIZA TURI', 'APPLICATION TYPE', 'Ariza maqsadi'],
   objectType:       ['Obyekt turi', 'OBYEKT TURI', 'OBJECT TYPE'],
@@ -87,7 +88,7 @@ var HISOBOT_FIELDS = {
 /** DATA varag'ida ishlatiladigan kanonik ustun tartibi (transformatsiyadan keyin). */
 var DATA_COLUMNS = [
   'rowId', 'applicationNo', 'transactionNo', 'cadastreNo', 'customer', 'tin',
-  'district', 'engineer', 'registrator', 'applicationType', 'objectType', 'serviceCode',
+  'district', 'engineer', 'chiefEngineer', 'registrator', 'applicationType', 'objectType', 'serviceCode',
   'objectType2', 'priznak', 'applicationSource', 'cadastrePassportType', 'externalArea',
   'lastProcessRole', 'lastProcessName',
   'residency', 'area', 'registerDate', 'deadlineDate', 'deadlineDays', 'completeDate', 'issuedDate', 'status',
@@ -239,11 +240,11 @@ var EMPLOYEE_COLUMNS = [
   'employeeId', 'fullName', 'role', 'region', 'district', 'phone', 'email', 'status'
 ];
 
-/** LOGIN varag'ining ustunlari. */
+/** LOGIN varag'ining ustunlari. (fullName — F.I.O., region — eski sxema mosligi uchun) */
 var LOGIN_COLUMNS = [
   'username', 'passwordHash', 'salt', 'role', 'region', 'district', 'employeeId',
   'status', 'mustChangePassword', 'passwordHistory', 'lastLogin', 'failedAttempts',
-  'lockedUntil', 'createdAt', 'updatedAt'
+  'lockedUntil', 'createdAt', 'updatedAt', 'fullName'
 ];
 
 /** Log darajalari. */

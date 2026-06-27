@@ -46,6 +46,7 @@ var Dashboard = (function () {
       tin: Utils.str(r.tin),
       district: Utils.str(r.district),
       engineer: Utils.str(r.engineer),
+      chiefEngineer: Utils.str(r.chiefEngineer),
       registrator: Utils.str(r.registrator),
       applicationType: Utils.str(r.applicationType),
       objectType: Utils.str(r.objectType),
@@ -278,11 +279,12 @@ var Dashboard = (function () {
   function filterOptions(user) {
     var rows = scopeFor(user, loadAll());
     var districts = {}, engineers = {}, types = {}, objectTypes = {};
-    var years = {}, registrators = {}, procRoles = {}, procNames = {};
+    var years = {}, registrators = {}, procRoles = {}, procNames = {}, chiefEngineers = {};
     for (var i = 0; i < rows.length; i++) {
       var r = rows[i];
       if (r.district) districts[r.district] = true;
       if (r.engineer) engineers[r.engineer] = (engineers[r.engineer] || r.district);
+      if (r.chiefEngineer) chiefEngineers[r.chiefEngineer] = (chiefEngineers[r.chiefEngineer] || r.district);
       if (r.registrator) registrators[r.registrator] = (registrators[r.registrator] || r.district);
       if (r.applicationType) types[r.applicationType] = true;
       if (r.objectType) objectTypes[r.objectType] = true;
@@ -296,6 +298,9 @@ var Dashboard = (function () {
       }).sort(function (a, b) { return a.name.localeCompare(b.name); }),
       engineers: Object.keys(engineers).map(function (e) {
         return { name: e, district: engineers[e] };
+      }).sort(function (a, b) { return a.name.localeCompare(b.name); }),
+      chiefEngineers: Object.keys(chiefEngineers).map(function (e) {
+        return { name: e, district: chiefEngineers[e] };
       }).sort(function (a, b) { return a.name.localeCompare(b.name); }),
       registrators: Object.keys(registrators).map(function (e) {
         return { name: e, district: registrators[e] };
