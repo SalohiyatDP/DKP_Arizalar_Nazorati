@@ -185,7 +185,6 @@ function apiGetProfile(token) {
       fullName: session.fullName,
       role: session.role,
       roleLabel: ROLE_LABEL[session.role] || session.role,
-      region: session.region,
       district: session.district,
       employeeId: session.employeeId,
       permissions: Security.permissionsOf(session)

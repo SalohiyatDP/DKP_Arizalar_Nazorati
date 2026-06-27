@@ -114,11 +114,8 @@ var Validation = (function () {
     if (!ROLES[user.role]) {
       errors.push('Rol noto\'g\'ri tanlangan.');
     }
-    if (user.role === ROLES.REGION && !required(user.region)) {
-      errors.push('Viloyat roli uchun viloyat ko\'rsatilishi shart.');
-    }
-    if (user.role === ROLES.DISTRICT && !required(user.district)) {
-      errors.push('Tuman roli uchun tuman ko\'rsatilishi shart.');
+    if ((user.role === ROLES.CHIEF || user.role === ROLES.ENGINEER) && !required(user.district)) {
+      errors.push('Bosh muhandis / Kadastr muhandis roli uchun tuman ko\'rsatilishi shart.');
     }
     if (user.email && !isEmail(user.email)) {
       errors.push('Email formati noto\'g\'ri.');
@@ -138,10 +135,6 @@ var Validation = (function () {
     }
     if (row.registerDate && !Utils.toDate(row.registerDate)) {
       errors.push('Qabul sanasi noto\'g\'ri formatda.');
-    }
-    if (row.pnfl && !isPnfl(row.pnfl)) {
-      // PNFL ixtiyoriy, lekin mavjud bo'lsa formati to'g'ri bo'lsin (ogohlantirish).
-      errors.push('JSHSHIR formati noto\'g\'ri (14 raqam bo\'lishi kerak).');
     }
     return result(errors.length === 0, errors);
   }
@@ -175,9 +168,9 @@ var Validation = (function () {
   function sanitizeFilters(filters) {
     filters = filters || {};
     var clean = {};
-    var stringFields = ['region', 'district', 'engineer', 'registrator', 'applicationType',
+    var stringFields = ['district', 'engineer', 'registrator', 'applicationType',
       'objectType', 'residency', 'status', 'deadlineStatus', 'paymentStatus',
-      'cadastreNo', 'transactionNo', 'applicationNo', 'customer', 'pnfl', 'tin', 'search'];
+      'cadastreNo', 'transactionNo', 'applicationNo', 'customer', 'tin', 'search'];
     for (var i = 0; i < stringFields.length; i++) {
       var f = stringFields[i];
       if (filters[f] != null && Utils.str(filters[f]) !== '') {

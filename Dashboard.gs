@@ -43,9 +43,7 @@ var Dashboard = (function () {
       transactionNo: Utils.str(r.transactionNo),
       cadastreNo: Utils.str(r.cadastreNo),
       customer: Utils.str(r.customer),
-      pnfl: Utils.str(r.pnfl),
       tin: Utils.str(r.tin),
-      region: Utils.str(r.region),
       district: Utils.str(r.district),
       engineer: Utils.str(r.engineer),
       registrator: Utils.str(r.registrator),
@@ -86,19 +84,11 @@ var Dashboard = (function () {
     switch (user.role) {
       case ROLES.ADMIN:
         return rows;
-      case ROLES.REGION:
-        return rows.filter(function (r) {
-          return Utils.normalize(r.region) === Utils.normalize(user.region);
-        });
-      case ROLES.DISTRICT:
-        return rows.filter(function (r) {
-          return Utils.normalize(r.district) === Utils.normalize(user.district) &&
-            (!user.region || Utils.normalize(r.region) === Utils.normalize(user.region));
-        });
+      case ROLES.CHIEF:
       case ROLES.ENGINEER:
-        var who = Utils.normalize(user.fullName || user.username);
+        // Bosh muhandis va kadastr muhandis — faqat o'z tumani.
         return rows.filter(function (r) {
-          return Utils.normalize(r.engineer) === who;
+          return Utils.normalize(r.district) === Utils.normalize(user.district);
         });
       default:
         return [];
@@ -117,7 +107,6 @@ var Dashboard = (function () {
     var search = f.search ? Utils.normalize(f.search) : null;
 
     return rows.filter(function (r) {
-      if (f.region && Utils.normalize(r.region) !== Utils.normalize(f.region)) return false;
       if (f.district && Utils.normalize(r.district) !== Utils.normalize(f.district)) return false;
       if (f.engineer && Utils.normalize(r.engineer) !== Utils.normalize(f.engineer)) return false;
       if (f.registrator && Utils.normalize(r.registrator) !== Utils.normalize(f.registrator)) return false;
@@ -132,7 +121,6 @@ var Dashboard = (function () {
       if (f.cadastreNo && Utils.str(r.cadastreNo).indexOf(f.cadastreNo) === -1) return false;
       if (f.transactionNo && Utils.str(r.transactionNo).indexOf(f.transactionNo) === -1) return false;
       if (f.applicationNo && Utils.str(r.applicationNo).indexOf(f.applicationNo) === -1) return false;
-      if (f.pnfl && Utils.str(r.pnfl).indexOf(Utils.digitsOnly(f.pnfl)) === -1) return false;
       if (f.tin && Utils.str(r.tin).indexOf(Utils.digitsOnly(f.tin)) === -1) return false;
       if (f.customer && Utils.normalize(r.customer).indexOf(Utils.normalize(f.customer)) === -1) return false;
 
@@ -150,7 +138,7 @@ var Dashboard = (function () {
       if (search) {
         var hay = Utils.normalize([
           r.applicationNo, r.transactionNo, r.cadastreNo, r.customer,
-          r.pnfl, r.tin, r.engineer, r.district, r.region
+          r.tin, r.engineer, r.district
         ].join(' '));
         if (hay.indexOf(search) === -1) return false;
       }
@@ -221,9 +209,7 @@ var Dashboard = (function () {
       transactionNo: r.transactionNo,
       cadastreNo: r.cadastreNo,
       customer: r.customer,
-      pnfl: r.pnfl,
       tin: r.tin,
-      region: r.region,
       district: r.district,
       engineer: r.engineer,
       registrator: r.registrator,
@@ -271,7 +257,7 @@ var Dashboard = (function () {
     for (var i = 0; i < rows.length && out.length < max; i++) {
       var r = rows[i];
       var hay = Utils.normalize([
-        r.applicationNo, r.transactionNo, r.cadastreNo, r.customer, r.pnfl, r.tin
+        r.applicationNo, r.transactionNo, r.cadastreNo, r.customer, r.tin
       ].join(' '));
       if (hay.indexOf(t) !== -1) out.push(_toDisplay(r));
     }
@@ -285,12 +271,11 @@ var Dashboard = (function () {
    */
   function filterOptions(user) {
     var rows = scopeFor(user, loadAll());
-    var regions = {}, districts = {}, engineers = {}, types = {}, objectTypes = {};
+    var districts = {}, engineers = {}, types = {}, objectTypes = {};
     var years = {}, registrators = {};
     for (var i = 0; i < rows.length; i++) {
       var r = rows[i];
-      if (r.region) regions[r.region] = true;
-      if (r.district) districts[r.district] = (districts[r.district] || r.region);
+      if (r.district) districts[r.district] = true;
       if (r.engineer) engineers[r.engineer] = (engineers[r.engineer] || r.district);
       if (r.registrator) registrators[r.registrator] = (registrators[r.registrator] || r.district);
       if (r.applicationType) types[r.applicationType] = true;
@@ -298,9 +283,8 @@ var Dashboard = (function () {
       if (r.year) years[r.year] = true;
     }
     return {
-      regions: Object.keys(regions).sort(),
       districts: Object.keys(districts).map(function (d) {
-        return { name: d, region: districts[d] };
+        return { name: d };
       }).sort(function (a, b) { return a.name.localeCompare(b.name); }),
       engineers: Object.keys(engineers).map(function (e) {
         return { name: e, district: engineers[e] };
@@ -334,12 +318,21 @@ var Dashboard = (function () {
     var filters = Validation.sanitizeFilters(rawFilters || {});
     var rows = scopedRows(user, filters);
 
+    // Oylik standart ko'rinish: aniq davr (sana/yil/oy) tanlanmagan bo'lsa —
+    // joriy oy 1-sanasidan boshlab kelgan arizalar + oldingi oylardan o'tgan
+    // (jarayondagi arizalar va kutilayotgan/qisman to'lovlar).
+    var period = 'Barcha davr';
+    if (!filters.dateFrom && !filters.dateTo && !filters.year && !filters.month && !filters.search) {
+      rows = _currentMonthScope(rows);
+      period = _currentPeriodLabel();
+    }
+
     var stats = Statistics.compute(rows);
     var fin = Finance.compute(rows);
 
     return {
       generatedAt: Utils.formatDateTime(new Date()),
-      scope: { role: user.role, region: user.region || '', district: user.district || '' },
+      scope: { role: user.role, district: user.district || '', period: period },
       widgets: {
         total: stats.summary.total,
         completed: stats.summary.completed,
@@ -385,13 +378,11 @@ var Dashboard = (function () {
       },
       rankings: {
         engineers: stats.engineerRanking.slice(0, 20),
-        districts: stats.districtRanking.slice(0, 20),
-        regions: stats.regionRanking
+        districts: stats.districtRanking.slice(0, 20)
       },
       finance: {
         comparison: fin.comparison,
         monthly: fin.monthly,
-        byRegion: fin.byRegion.slice(0, 20),
         byDistrict: fin.byDistrict.slice(0, 200),
         byEngineer: fin.byEngineer.slice(0, 1000),
         byRegistrator: fin.byRegistrator.slice(0, 1000)
@@ -405,6 +396,32 @@ var Dashboard = (function () {
    * @param {Array<Object>} rows
    * @returns {Array<Object>}
    */
+  /**
+   * Joriy oy ko'rinishi: joriy oy 1-sanasidan kelgan arizalar, PLUS oldingi
+   * oylardan "o'tib kelgan" ochiq ishlar (jarayondagi arizalar) va kutilayotgan/
+   * qisman to'lovlar. Ko'rsatkichlar har oy 1-sanasida shu mantiq bo'yicha yangilanadi.
+   * @param {Array<Object>} rows
+   * @returns {Array<Object>}
+   */
+  function _currentMonthScope(rows) {
+    var now = new Date();
+    var startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1).getTime();
+    return rows.filter(function (r) {
+      var reg = Utils.toDate(r.registerDate);
+      var inMonth = reg && Utils.startOfDay(reg).getTime() >= startOfMonth;
+      var open = r.deadlineStatus !== DEADLINE_STATUS.COMPLETED;  // jarayondagi/o'tgan/bugun
+      var pendingPay = r.paymentStatus === PAYMENT_STATUS.WAITING ||
+        r.paymentStatus === PAYMENT_STATUS.PARTIAL;               // kutilayotgan to'lov
+      return inMonth || open || pendingPay;
+    });
+  }
+
+  /** Joriy davr yorlig'i (masalan, "Iyun 2026 (joriy oy)"). */
+  function _currentPeriodLabel() {
+    var now = new Date();
+    return (MONTH_NAMES_UZ[now.getMonth()] || '') + ' ' + now.getFullYear() + ' (joriy oy)';
+  }
+
   function _recentActivities(rows) {
     var sorted = rows.slice().sort(function (a, b) {
       var ad = Utils.toDate(a.registerDate);

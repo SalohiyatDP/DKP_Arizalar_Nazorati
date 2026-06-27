@@ -15,7 +15,7 @@ Asosiy maqsad — kadastr arizalarini quyidagi kesimlarda nazorat qilish va tahl
 - Turar / Noturar joy arizalari
 - Ish kunlari bo'yicha muddat (deadline) hisoblash (shanba, yakshanba va bayramlarsiz)
 - Oylik to'langan va kutilayotgan to'lov summalari
-- Muhandis, tuman va viloyat samaradorligi
+- Muhandis va tuman samaradorligi
 - Reyting va moliyaviy dashboard, muddat nazorati
 
 ---
@@ -27,8 +27,8 @@ Asosiy maqsad — kadastr arizalarini quyidagi kesimlarda nazorat qilish va tahl
 | **Boshqaruv paneli** | KPI vidjetlar, grafiklar (holat, turar/noturar, tendensiya, to'lov), so'nggi faollik |
 | **Arizalar** | Kaskad filtrlash, tezkor qidiruv, sahifalash, tafsilotlar, eksport |
 | **Moliya** | Daromad, qarz, yig'ilish darajasi, oylararo taqqoslash |
-| **Hisobotlar** | Muddati o'tgan, bugun tugaydigan, muhandis/tuman/viloyat, moliyaviy, samaradorlik, to'lov |
-| **Reytinglar** | Muhandis, tuman, viloyat reytingi (ball asosida) |
+| **Hisobotlar** | Muddati o'tgan, bugun tugaydigan, muhandis/tuman, moliyaviy, samaradorlik, to'lov |
+| **Reytinglar** | Muhandis, tuman reytingi (ball asosida) |
 | **Import** | Bir tugmali import: zaxira → tekshirish → transformatsiya → statistika → kesh |
 | **Foydalanuvchilar** | Administrator hisoblarni yaratadi, rollarni boshqaradi, parolni tiklaydi |
 | **Audit loglar** | Kirish, import, eksport va amallar tarixi |
@@ -37,14 +37,23 @@ Asosiy maqsad — kadastr arizalarini quyidagi kesimlarda nazorat qilish va tahl
 
 ## 🔐 Rollar va ruxsatlar
 
+Tizim **bitta viloyatdan** boshqariladi — alohida viloyat darajasi yo'q.
+
 | Rol | Ko'rish doirasi |
 |-----|------------------|
-| **Administrator** | Butun tizim, foydalanuvchilar, sozlamalar, loglar |
-| **Viloyat** | Faqat o'z viloyati (tumanlar va muhandislarga chuqurlashish) |
-| **Tuman** | Faqat o'z tumani (muhandislarga chuqurlashish) |
-| **Kadastr muhandisi** | Faqat o'ziga tegishli arizalar |
+| **Administrator** | Butun tizim (barcha tumanlar), foydalanuvchilar, import, sozlamalar, loglar |
+| **Bosh muhandis** | Faqat o'z tumani monitoring paneli (ko'rish, moliya, hisobot) |
+| **Kadastr muhandis** | Faqat o'z tumani monitoring paneli (ko'rish, moliya, hisobot) |
 
 > Barcha ruxsat tekshiruvlari **server tomonida** amalga oshiriladi. Frontend'ga hech qachon ishonilmaydi.
+
+> ⚠️ **Parollar ochiq saqlanadi** (heshlanmaydi) — login-parolni administrator beradi va yo'qolganda
+> qayta beradi (Foydalanuvchilar bo'limida parol ko'rinadi). Bu ichki tizim talabi; tashqi tarmoqqa
+> ochiq joylashtirilmasligi tavsiya etiladi. Eski heshlangan parollar uchun: DKP Nazorat menyusi →
+> "Parollarni ochiq formatga o'tkazish".
+
+> 📊 **Ko'rsatkichlar oylik:** asosiy panel standart holda joriy oyning 1-sanasidan boshlab ma'lumotni
+> ko'rsatadi; jarayondagi arizalar va kutilayotgan to'lovlar yangi oyga avtomatik o'tib turadi.
 
 
 ---

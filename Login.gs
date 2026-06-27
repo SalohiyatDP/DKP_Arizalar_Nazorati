@@ -6,7 +6,7 @@
  *   - changePassword: parolni o'zgartirish (tarix bilan)
  *   - user CRUD: administrator foydalanuvchilarni boshqaradi
  *   - seedAdmin: birinchi ishga tushirishda standart administrator yaratadi
- * LOGIN varag'i — foydalanuvchilar manbai. Parollar faqat hesh ko'rinishida.
+ * LOGIN varag'i — foydalanuvchilar manbai. Parollar OCHIQ saqlanadi (admin beradi).
  * ============================================================================
  */
 
@@ -133,7 +133,6 @@ var Login = (function () {
     return {
       username: Utils.str(user.username),
       role: Utils.str(user.role).toUpperCase(),
-      region: Utils.str(user.region),
       district: Utils.str(user.district),
       employeeId: Utils.str(user.employeeId),
       fullName: fullName
@@ -150,7 +149,6 @@ var Login = (function () {
       username: u.username,
       role: u.role,
       roleLabel: ROLE_LABEL[u.role] || u.role,
-      region: u.region,
       district: u.district,
       employeeId: u.employeeId,
       fullName: u.fullName,
@@ -304,7 +302,7 @@ var Login = (function () {
     var policy = Validation.validatePassword(pwd);
     if (!policy.ok) return { ok: false, error: policy.errors.join(' ') };
 
-    var salt = Security.generateSalt();
+    var salt = '';
     var hash = Security.hashPassword(pwd, salt);
     var now = Utils.formatDateTime(new Date());
 
@@ -313,11 +311,11 @@ var Login = (function () {
       passwordHash: hash,
       salt: salt,
       role: Utils.str(userData.role).toUpperCase(),
-      region: Utils.str(userData.region),
+      region: '',
       district: Utils.str(userData.district),
       employeeId: Utils.str(userData.employeeId),
       status: 'active',
-      mustChangePassword: true,
+      mustChangePassword: false,
       passwordHistory: '[]',
       lastLogin: '',
       failedAttempts: 0,
@@ -345,10 +343,17 @@ var Login = (function () {
     Security.require(session, PERMISSIONS.MANAGE_USERS);
     var allowed = {};
     if (updates.role) allowed.role = Utils.str(updates.role).toUpperCase();
-    if (updates.region != null) allowed.region = Utils.str(updates.region);
     if (updates.district != null) allowed.district = Utils.str(updates.district);
     if (updates.status) allowed.status = Utils.str(updates.status);
     if (updates.employeeId != null) allowed.employeeId = Utils.str(updates.employeeId);
+    // Admin parolni bevosita o'rnatishi/qayta berishi mumkin (ochiq saqlanadi).
+    if (updates.password) {
+      var pol = Validation.validatePassword(updates.password);
+      if (!pol.ok) return { ok: false, error: pol.errors.join(' ') };
+      allowed.passwordHash = Security.hashPassword(updates.password, '');
+      allowed.salt = '';
+      allowed.mustChangePassword = false;
+    }
     allowed.updatedAt = Utils.formatDateTime(new Date());
 
     var ok = _updateUserRow(username, allowed);
@@ -370,10 +375,8 @@ var Login = (function () {
     var user = findByUsername(username);
     if (!user) return { ok: false, error: 'Foydalanuvchi topilmadi.' };
     var pwd = _randomPassword();
-    var salt = Security.generateSalt();
-    var hash = Security.hashPassword(pwd, salt);
     _updateUserRow(username, {
-      passwordHash: hash, salt: salt, mustChangePassword: true,
+      passwordHash: Security.hashPassword(pwd, ''), salt: '', mustChangePassword: false,
       failedAttempts: 0, lockedUntil: '', updatedAt: Utils.formatDateTime(new Date())
     });
     AppLog.action(ACTION_TYPE.PASSWORD_CHANGE, session.username,
@@ -382,7 +385,8 @@ var Login = (function () {
   }
 
   /**
-   * Barcha foydalanuvchilar ro'yxati (xavfsiz, parollarsiz).
+   * Barcha foydalanuvchilar ro'yxati. Admin parolni ko'rishi mumkin (ochiq saqlanadi),
+   * chunki login-parolni admin beradi va yo'qolganda qayta beradi.
    * @param {Object} session
    * @returns {Array<Object>}
    */
@@ -391,9 +395,9 @@ var Login = (function () {
     return _loadUsers().map(function (u) {
       return {
         username: u.username,
+        password: Utils.str(u.passwordHash),
         role: u.role,
         roleLabel: ROLE_LABEL[Utils.str(u.role).toUpperCase()] || u.role,
-        region: u.region,
         district: u.district,
         employeeId: u.employeeId,
         status: u.status,
@@ -444,20 +448,30 @@ var Login = (function () {
   function seedAdmin() {
     _ensureLoginSheet();
     var users = _loadUsers();
-    var hasAdmin = false;
+    var adminUser = null;
     for (var i = 0; i < users.length; i++) {
-      if (Utils.str(users[i].role).toUpperCase() === ROLES.ADMIN) { hasAdmin = true; break; }
+      if (Utils.str(users[i].role).toUpperCase() === ROLES.ADMIN) { adminUser = users[i]; break; }
     }
-    if (hasAdmin) return { created: false };
+
+    if (adminUser) {
+      // MIGRATSIYA: eski heshlangan parol (64 hex) bo'lsa — ochiq parolga tiklaymiz,
+      // aks holda admin ochiq rejimga o'tgandan keyin kira olmay qoladi.
+      if (_looksLikeHash(adminUser.passwordHash)) {
+        _updateUserRow(adminUser.username, {
+          passwordHash: 'Admin@2026', salt: '', mustChangePassword: true,
+          updatedAt: Utils.formatDateTime(new Date())
+        });
+        return { created: false, repaired: true, username: adminUser.username, password: 'Admin@2026' };
+      }
+      return { created: false };
+    }
 
     var pwd = 'Admin@2026';
-    var salt = Security.generateSalt();
-    var hash = Security.hashPassword(pwd, salt);
     var now = Utils.formatDateTime(new Date());
     var row = _buildUserRow({
       username: 'admin',
-      passwordHash: hash,
-      salt: salt,
+      passwordHash: Security.hashPassword(pwd, ''),
+      salt: '',
       role: ROLES.ADMIN,
       region: '',
       district: '',
@@ -473,6 +487,38 @@ var Login = (function () {
     });
     Repository.appendRow(SHEETS.LOGIN, row);
     return { created: true, username: 'admin', password: pwd };
+  }
+
+  /**
+   * Qiymat eski SHA-256 hesh ko'rinishidami (64 ta hex belgi)?
+   * @param {*} v
+   * @returns {boolean}
+   */
+  function _looksLikeHash(v) {
+    return /^[0-9a-f]{64}$/i.test(Utils.str(v));
+  }
+
+  /**
+   * MIGRATSIYA (admin Apps Script muharririda bir marta ishlatishi mumkin):
+   * heshlangan parolga ega barcha foydalanuvchilarga vaqtinchalik OCHIQ parol beradi.
+   * Natijada yangi parollar ro'yxati qaytadi — admin ularni tarqatadi.
+   * @returns {Array<{username: string, password: string}>}
+   */
+  function migratePasswordsToPlaintext() {
+    var users = _loadUsers();
+    var out = [];
+    for (var i = 0; i < users.length; i++) {
+      var u = users[i];
+      if (_looksLikeHash(u.passwordHash)) {
+        var pwd = _randomPassword();
+        _updateUserRow(u.username, {
+          passwordHash: pwd, salt: '', mustChangePassword: false,
+          updatedAt: Utils.formatDateTime(new Date())
+        });
+        out.push({ username: u.username, password: pwd });
+      }
+    }
+    return out;
   }
 
   /**
@@ -493,6 +539,7 @@ var Login = (function () {
     listUsers: listUsers,
     findByUsername: findByUsername,
     seedAdmin: seedAdmin,
+    migratePasswordsToPlaintext: migratePasswordsToPlaintext,
     logout: logout
   };
 })();

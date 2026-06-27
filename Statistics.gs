@@ -48,7 +48,6 @@ var Statistics = (function () {
     var acc = _emptyAccumulator();
     var byEngineer = {};
     var byDistrict = {};
-    var byRegion = {};
     var byType = {};
     var byMonth = {};
 
@@ -80,7 +79,6 @@ var Statistics = (function () {
 
       _bump(byEngineer, r.engineer || 'Noma\'lum', r);
       _bump(byDistrict, r.district || 'Noma\'lum', r);
-      _bump(byRegion, r.region || 'Noma\'lum', r);
 
       var typeKey = r.applicationType || 'Boshqa';
       byType[typeKey] = (byType[typeKey] || 0) + 1;
@@ -114,7 +112,6 @@ var Statistics = (function () {
       },
       engineerRanking: _ranking(byEngineer),
       districtRanking: _ranking(byDistrict),
-      regionRanking: _ranking(byRegion),
       byType: byType,
       byMonth: byMonth
     };

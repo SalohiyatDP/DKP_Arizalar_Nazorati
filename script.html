@@ -372,7 +372,6 @@ Profile.loadProfile = function (user) {
   App._setText('profileFullName', user.fullName || user.username);
   App._setText('profileUsername', '@' + user.username);
   App._setText('pfRole', user.roleLabel || user.role);
-  App._setText('pfRegion', user.region || '—');
   App._setText('pfDistrict', user.district || '—');
   App._setText('pfEmployeeId', user.employeeId || '—');
   App._setText('pfPermissions', (user.permissions || []).length + ' ta ruxsat');

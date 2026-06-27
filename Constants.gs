@@ -40,9 +40,7 @@ var HISOBOT_FIELDS = {
   transactionNo:    ['Tranzaksiya raqami', 'TRANZAKSIYA RAQAMI', 'TRANSACTION NUMBER'],
   cadastreNo:       ['Kadastr raqami', 'KADASTR RAQAMI', 'CADASTRE NUMBER'],
   customer:         ['Buyurtmachi', 'Mulkdor', 'MIJOZ', 'ARIZACHI', 'CUSTOMER'],
-  pnfl:             ['PNFL', 'JSHSHIR', 'PINFL'],
   tin:              ['STIR', 'INN', 'TIN'],
-  region:           ['Viloyat', 'VILOYAT', 'REGION', 'HUDUD'],
   district:         ['Tuman', 'TUMAN', 'DISTRICT'],
   engineer:         ['Ijrochi muhandis', 'MUHANDIS', 'ENGINEER', 'IJROCHI MUHANDIS'],
   registrator:      ['Ijrochi registrator', 'REGISTRATOR', 'Registrator'],
@@ -82,8 +80,8 @@ var HISOBOT_FIELDS = {
 
 /** DATA varag'ida ishlatiladigan kanonik ustun tartibi (transformatsiyadan keyin). */
 var DATA_COLUMNS = [
-  'rowId', 'applicationNo', 'transactionNo', 'cadastreNo', 'customer', 'pnfl', 'tin',
-  'region', 'district', 'engineer', 'registrator', 'applicationType', 'objectType', 'serviceCode',
+  'rowId', 'applicationNo', 'transactionNo', 'cadastreNo', 'customer', 'tin',
+  'district', 'engineer', 'registrator', 'applicationType', 'objectType', 'serviceCode',
   'objectType2', 'priznak', 'applicationSource', 'cadastrePassportType', 'externalArea',
   'residency', 'area', 'registerDate', 'deadlineDate', 'deadlineDays', 'completeDate', 'issuedDate', 'status',
   'deadlineStatus', 'remainingDays', 'progressPercent', 'colorStatus', 'issued',
@@ -182,28 +180,24 @@ var RESIDENCY_LABEL = {
   NON_RESIDENTIAL: 'Noturar joy'
 };
 
-/** Foydalanuvchi rollari. */
+/** Foydalanuvchi rollari. Tizim bitta viloyatdan boshqariladi (viloyat darajasi yo'q). */
 var ROLES = {
-  ADMIN: 'ADMIN',
-  REGION: 'REGION',
-  DISTRICT: 'DISTRICT',
-  ENGINEER: 'ENGINEER'
+  ADMIN: 'ADMIN',       // Viloyat darajasi — to'liq boshqaruv
+  CHIEF: 'CHIEF',       // Tuman bosh muhandisi — o'z tumani monitoringi
+  ENGINEER: 'ENGINEER'  // Tuman kadastr muhandisi — o'z tumani monitoringi
 };
 
 var ROLE_LABEL = {
   ADMIN: 'Administrator',
-  REGION: 'Viloyat',
-  DISTRICT: 'Tuman',
-  ENGINEER: 'Kadastr muhandisi'
+  CHIEF: 'Bosh muhandis',
+  ENGINEER: 'Kadastr muhandis'
 };
 
 /** Ruxsatlar (permission) ro'yxati. */
 var PERMISSIONS = {
   VIEW_DASHBOARD: 'VIEW_DASHBOARD',
-  VIEW_ALL_REGIONS: 'VIEW_ALL_REGIONS',
-  VIEW_OWN_REGION: 'VIEW_OWN_REGION',
+  VIEW_ALL_DISTRICTS: 'VIEW_ALL_DISTRICTS',
   VIEW_OWN_DISTRICT: 'VIEW_OWN_DISTRICT',
-  VIEW_OWN_APPLICATIONS: 'VIEW_OWN_APPLICATIONS',
   RUN_IMPORT: 'RUN_IMPORT',
   RUN_EXPORT: 'RUN_EXPORT',
   MANAGE_USERS: 'MANAGE_USERS',
@@ -215,25 +209,25 @@ var PERMISSIONS = {
 
 /** Rol -> ruxsatlar xaritasi (server tomonida tekshiriladi). */
 var ROLE_PERMISSIONS = {
+  // Administrator (viloyat darajasi) — to'liq boshqaruv, barcha tumanlar.
   ADMIN: [
-    PERMISSIONS.VIEW_DASHBOARD, PERMISSIONS.VIEW_ALL_REGIONS, PERMISSIONS.RUN_IMPORT,
+    PERMISSIONS.VIEW_DASHBOARD, PERMISSIONS.VIEW_ALL_DISTRICTS, PERMISSIONS.RUN_IMPORT,
     PERMISSIONS.RUN_EXPORT, PERMISSIONS.MANAGE_USERS, PERMISSIONS.MANAGE_SETTINGS,
     PERMISSIONS.VIEW_FINANCE, PERMISSIONS.VIEW_LOGS, PERMISSIONS.VIEW_REPORTS
   ],
-  REGION: [
-    PERMISSIONS.VIEW_DASHBOARD, PERMISSIONS.VIEW_OWN_REGION, PERMISSIONS.RUN_EXPORT,
+  // Bosh muhandis (tuman) — o'z tumani monitoringi (ko'rish, moliya, hisobot).
+  CHIEF: [
+    PERMISSIONS.VIEW_DASHBOARD, PERMISSIONS.VIEW_OWN_DISTRICT,
     PERMISSIONS.VIEW_FINANCE, PERMISSIONS.VIEW_REPORTS
   ],
-  DISTRICT: [
-    PERMISSIONS.VIEW_DASHBOARD, PERMISSIONS.VIEW_OWN_DISTRICT, PERMISSIONS.RUN_EXPORT,
-    PERMISSIONS.VIEW_FINANCE, PERMISSIONS.VIEW_REPORTS
-  ],
+  // Kadastr muhandis (tuman) — o'z tumani monitoringi (ko'rish, moliya, hisobot).
   ENGINEER: [
-    PERMISSIONS.VIEW_DASHBOARD, PERMISSIONS.VIEW_OWN_APPLICATIONS, PERMISSIONS.VIEW_REPORTS
+    PERMISSIONS.VIEW_DASHBOARD, PERMISSIONS.VIEW_OWN_DISTRICT,
+    PERMISSIONS.VIEW_FINANCE, PERMISSIONS.VIEW_REPORTS
   ]
 };
 
-/** EMPLOYEES varag'ining ustunlari. */
+/** EMPLOYEES varag'ining ustunlari. (region — eski sxema mosligi uchun saqlanadi, ishlatilmaydi) */
 var EMPLOYEE_COLUMNS = [
   'employeeId', 'fullName', 'role', 'region', 'district', 'phone', 'email', 'status'
 ];

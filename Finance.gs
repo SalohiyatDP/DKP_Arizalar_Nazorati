@@ -23,7 +23,6 @@ var Finance = (function () {
   function compute(rows) {
     var totalAmount = 0, totalPaid = 0, totalDebt = 0;
     var byMonth = {};
-    var byRegion = {};
     var byDistrict = {};
     var byEngineer = {};
     var byRegistrator = {};
@@ -40,7 +39,6 @@ var Finance = (function () {
 
       var mKey = r.year + '-' + ('0' + r.month).slice(-2);
       _accMonth(byMonth, mKey, amount, paid, debt);
-      _accGroup(byRegion, r.region || 'Noma\'lum', amount, paid, debt);
       _accGroup(byDistrict, r.district || 'Noma\'lum', amount, paid, debt);
       _accGroup(byEngineer, r.engineer || 'Noma\'lum', amount, paid, debt);
       _accGroup(byRegistrator, r.registrator || 'Noma\'lum', amount, paid, debt);
@@ -62,7 +60,6 @@ var Finance = (function () {
         monthlyDebt: current.debt
       },
       monthly: monthly,
-      byRegion: _groupArray(byRegion),
       byDistrict: _groupArray(byDistrict),
       byEngineer: _groupArray(byEngineer),
       byRegistrator: _groupArray(byRegistrator),

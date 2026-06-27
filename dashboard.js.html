@@ -57,10 +57,10 @@ Dash.load = function (force) {
 
 Dash._scopeText = function (s) {
   if (!s) return '';
-  if (s.role === 'ADMIN') return 'Butun tizim bo\'yicha umumiy holat';
-  if (s.role === 'REGION') return s.region + ' viloyati bo\'yicha';
-  if (s.role === 'DISTRICT') return s.district + ' tumani bo\'yicha';
-  return 'Shaxsiy arizalar bo\'yicha';
+  var period = s.period ? (' — ' + s.period) : '';
+  if (s.role === 'ADMIN') return 'Butun tizim bo\'yicha' + period;
+  if (s.district) return s.district + ' tumani bo\'yicha' + period;
+  return 'Umumiy holat' + period;
 };
 
 
@@ -180,7 +180,6 @@ Apps._renderFilters = function (o) {
       (onchange ? ' onchange="' + onchange + '"' : '') + '>' + opts + '</select></div>';
   }
   var html = '';
-  html += selBox('fRegion', 'Viloyat', o.regions, null, null, 'Apps.onRegionChange()');
   html += selBox('fDistrict', 'Tuman', o.districts, 'name', 'name', 'Apps.onDistrictChange()');
   html += selBox('fEngineer', 'Muhandis', o.engineers, 'name', 'name');
   html += selBox('fType', 'Ariza turi', o.applicationTypes);
@@ -194,31 +193,13 @@ Apps._renderFilters = function (o) {
   document.getElementById('filtersContainer').innerHTML = html;
 };
 
-/** Viloyat o'zgarsa — tuman va muhandis ro'yxatlarini shu viloyatga moslaydi. */
-Apps.onRegionChange = function () {
-  var region = document.getElementById('fRegion').value;
-  var o = Apps._opts;
-  var dSel = document.getElementById('fDistrict');
-  var districts = o.districts.filter(function (d) { return !region || d.region === region; });
-  dSel.innerHTML = '<option value="">Tuman (barchasi)</option>' +
-    districts.map(function (d) { return '<option value="' + esc(d.name) + '">' + esc(d.name) + '</option>'; }).join('');
-  Apps.onDistrictChange();
-};
-
 /** Tuman o'zgarsa — muhandislar ro'yxatini shu tumanga moslaydi. */
 Apps.onDistrictChange = function () {
   var district = document.getElementById('fDistrict').value;
-  var region = document.getElementById('fRegion').value;
   var o = Apps._opts;
   var eSel = document.getElementById('fEngineer');
   var engs = o.engineers.filter(function (e) {
-    if (district) return e.district === district;
-    if (region) {
-      // viloyat tanlangan, tuman yo'q — shu viloyatdagi tumanlarning muhandislari
-      var dn = o.districts.filter(function (d) { return d.region === region; }).map(function (d) { return d.name; });
-      return dn.indexOf(e.district) !== -1;
-    }
-    return true;
+    return !district || e.district === district;
   });
   eSel.innerHTML = '<option value="">Muhandis (barchasi)</option>' +
     engs.map(function (e) { return '<option value="' + esc(e.name) + '">' + esc(e.name) + '</option>'; }).join('');
@@ -227,7 +208,7 @@ Apps.onDistrictChange = function () {
 Apps._collectFilters = function () {
   function v(id) { var el = document.getElementById(id); return el ? el.value : ''; }
   return {
-    region: v('fRegion'), district: v('fDistrict'), engineer: v('fEngineer'),
+    district: v('fDistrict'), engineer: v('fEngineer'),
     applicationType: v('fType'), residency: v('fResidency'), deadlineStatus: v('fDeadline'),
     paymentStatus: v('fPayment'), year: v('fYear'), dateFrom: v('fDateFrom'),
     dateTo: v('fDateTo'), search: v('fSearch')
@@ -302,7 +283,7 @@ Apps.showDetail = function (rowId) {
   var body = '<table class="data-table"><tbody>' +
     row('Ariza raqami', r.applicationNo) + row('Tranzaksiya', r.transactionNo) +
     row('Kadastr raqami', r.cadastreNo) + row('Mijoz', r.customer) +
-    row('JSHSHIR', r.pnfl) + row('STIR', r.tin) + row('Viloyat', r.region) +
+    row('STIR', r.tin) +
     row('Tuman', r.district) + row('Muhandis', r.engineer) +
     row('Ariza turi', r.applicationType) + row('Obyekt turi', r.objectType) +
     row('Turar/Noturar', r.residencyLabel) + row('Qabul sanasi', r.registerDate) +
@@ -652,28 +633,31 @@ var UsersUI = {};
 UsersUI.load = function () {
   api('apiListUsers', State.token).then(function (list) {
     var t = document.getElementById('usersTable');
-    t.innerHTML = '<thead><tr><th>Login</th><th>F.I.O / Rol</th><th>Hudud</th>' +
+    t.innerHTML = '<thead><tr><th>Login</th><th>Parol</th><th>Rol</th><th>Tuman</th>' +
       '<th>Holat</th><th>Oxirgi kirish</th><th>Amallar</th></tr></thead><tbody>' +
       list.map(function (u) {
-        var area = [u.region, u.district].filter(Boolean).join(' / ') || '—';
-        return '<tr><td><strong>' + esc(u.username) + '</strong></td><td>' + esc(u.roleLabel) +
-          '</td><td>' + esc(area) + '</td><td><span class="badge" style="background:' +
+        return '<tr><td><strong>' + esc(u.username) + '</strong></td>' +
+          '<td><code>' + esc(u.password || '—') + '</code></td>' +
+          '<td>' + esc(u.roleLabel) + '</td>' +
+          '<td>' + esc(u.district || '—') + '</td>' +
+          '<td><span class="badge" style="background:' +
           (/(active|faol)/i.test(u.status) ? 'var(--md-success)' : 'var(--md-danger)') + '">' +
           esc(u.status || 'active') + '</span></td><td>' + esc(u.lastLogin || '—') + '</td>' +
-          '<td><button class="btn-icon" title="Parolni tiklash" onclick="UsersUI.reset(\'' + esc(u.username) +
+          '<td><button class="btn-icon" title="Parol berish/o\'zgartirish" onclick="UsersUI.setPassword(\'' + esc(u.username) +
+          '\')"><span class="material-icons">key</span></button>' +
+          '<button class="btn-icon" title="Tasodifiy parol tiklash" onclick="UsersUI.reset(\'' + esc(u.username) +
           '\')"><span class="material-icons">lock_reset</span></button></td></tr>';
       }).join('') + '</tbody>';
   }).catch(function (e) { App.toast(e.message, 'error'); });
 };
 
 UsersUI.openCreate = function () {
-  var roles = [['ADMIN', 'Administrator'], ['REGION', 'Viloyat'], ['DISTRICT', 'Tuman'], ['ENGINEER', 'Kadastr muhandisi']];
+  var roles = [['ADMIN', 'Administrator'], ['CHIEF', 'Bosh muhandis'], ['ENGINEER', 'Kadastr muhandis']];
   var body = '<div class="field"><label>Login</label><input class="input" id="nuUsername"></div>' +
     '<div class="field"><label>Parol (bo\'sh — avtomatik)</label><input class="input" id="nuPassword"></div>' +
     '<div class="field"><label>Rol</label><select class="select" id="nuRole">' +
     roles.map(function (r) { return '<option value="' + r[0] + '">' + r[1] + '</option>'; }).join('') + '</select></div>' +
-    '<div class="field"><label>Viloyat</label><input class="input" id="nuRegion"></div>' +
-    '<div class="field"><label>Tuman</label><input class="input" id="nuDistrict"></div>' +
+    '<div class="field"><label>Tuman (bosh/kadastr muhandis uchun shart)</label><input class="input" id="nuDistrict"></div>' +
     '<div class="field"><label>Xodim ID</label><input class="input" id="nuEmployeeId"></div>';
   App.showModal('Yangi foydalanuvchi', body,
     '<button class="btn" onclick="App.closeModal(\'genericModal\')">Bekor</button>' +
@@ -683,7 +667,7 @@ UsersUI.openCreate = function () {
 UsersUI.create = function () {
   function v(id) { return document.getElementById(id).value.trim(); }
   var data = { username: v('nuUsername'), password: v('nuPassword'), role: v('nuRole'),
-    region: v('nuRegion'), district: v('nuDistrict'), employeeId: v('nuEmployeeId') };
+    district: v('nuDistrict'), employeeId: v('nuEmployeeId') };
   api('apiCreateUser', State.token, State.csrf, data).then(function (res) {
     App.closeModal('genericModal');
     var msg = 'Foydalanuvchi yaratildi.';
@@ -693,10 +677,23 @@ UsersUI.create = function () {
   }).catch(function (e) { App.toast(e.message, 'error'); });
 };
 
+/** Admin foydalanuvchiga aniq parol beradi/o'zgartiradi. */
+UsersUI.setPassword = function (username) {
+  var pwd = prompt('"' + username + '" uchun yangi parol (kamida 8 belgi, harf + raqam):', '');
+  if (pwd === null) return;
+  pwd = pwd.trim();
+  if (!pwd) { App.toast('Parol bo\'sh bo\'lishi mumkin emas', 'warning'); return; }
+  api('apiUpdateUser', State.token, State.csrf, username, { password: pwd }).then(function () {
+    App.toast('Parol o\'rnatildi: ' + pwd, 'success');
+    UsersUI.load();
+  }).catch(function (e) { App.toast(e.message, 'error'); });
+};
+
 UsersUI.reset = function (username) {
-  if (!confirm(username + ' uchun parolni tiklaysizmi?')) return;
+  if (!confirm(username + ' uchun parolni tasodifiy tiklaysizmi?')) return;
   api('apiResetPassword', State.token, State.csrf, username).then(function (res) {
     App.toast('Yangi parol: ' + res.password, 'success');
+    UsersUI.load();
   }).catch(function (e) { App.toast(e.message, 'error'); });
 };
 
