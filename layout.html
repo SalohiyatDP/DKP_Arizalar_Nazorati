@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="uz">
+<head>
+  <base target="_top">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title><?= appName ?></title>
+  <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
+  <?!= include('theme'); ?>
+  <?!= include('style'); ?>
+</head>
+<body>
+  <!-- Yuqori progress chizig'i -->
+  <div id="topProgress"></div>
+
+  <!-- Yuklanish ekrani -->
+  <?!= include('loading'); ?>
+
+  <!-- LOGIN ko'rinishi -->
+  <div id="loginView" class="hidden">
+    <?!= include('login'); ?>
+  </div>
+
+  <!-- ASOSIY ILOVA -->
+  <div id="appShell" class="app-shell">
+    <?!= include('navbar'); ?>
+    <?!= include('sidebar'); ?>
+
+    <main class="main-content">
+      <div id="page-dashboard" class="page"><?!= include('dashboard'); ?></div>
+      <div id="page-profile" class="page hidden"><?!= include('profile'); ?></div>
+      <div id="page-changePassword" class="page hidden"><?!= include('changePassword'); ?></div>
+    </main>
+
+    <?!= include('footer'); ?>
+  </div>
+
+  <!-- Parolni majburiy o'zgartirish modali -->
+  <div class="modal-overlay" id="forcePasswordModal">
+    <div class="modal">
+      <div class="modal-header"><h3>Parolni o'zgartirish talab qilinadi</h3></div>
+      <div class="modal-body">
+        <p class="mb-16" style="color:var(--text-secondary)">Xavfsizlik uchun birinchi kirishda parolingizni yangilang.</p>
+        <div class="field"><label>Joriy parol</label><input type="password" class="input" id="fpOld"></div>
+        <div class="field"><label>Yangi parol</label><input type="password" class="input" id="fpNew"></div>
+        <div class="field"><label>Yangi parolni tasdiqlang</label><input type="password" class="input" id="fpConfirm"></div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-primary" onclick="App.submitForcePassword()">Saqlash</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Umumiy modal konteyneri -->
+  <div class="modal-overlay" id="genericModal">
+    <div class="modal wide" id="genericModalBox">
+      <div class="modal-header"><h3 id="genericModalTitle"></h3>
+        <button class="btn-icon" onclick="App.closeModal('genericModal')"><span class="material-icons">close</span></button>
+      </div>
+      <div class="modal-body" id="genericModalBody"></div>
+      <div class="modal-footer" id="genericModalFooter"></div>
+    </div>
+  </div>
+
+  <!-- Toast bildirishnomalar -->
+  <div id="toastContainer"></div>
+
+  <!-- Konfiguratsiya (server -> klient) -->
+  <script>
+    window.APP_CONFIG = {
+      appName: <?= JSON.stringify(appName) ?>,
+      organization: <?= JSON.stringify(organization) ?>,
+      version: <?= JSON.stringify(version) ?>,
+      startPage: <?= JSON.stringify(page) ?>,
+      darkModeDefault: <?= darkModeDefault ? 'true' : 'false' ?>
+    };
+  </script>
+
+  <!-- Google Charts -->
+  <script src="https://www.gstatic.com/charts/loader.js"></script>
+
+  <!-- Klient skriptlari -->
+  <?!= include('script'); ?>
+  <?!= include('login.js'); ?>
+  <?!= include('dashboard.js'); ?>
+</body>
+</html>

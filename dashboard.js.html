@@ -1,0 +1,513 @@
+<!-- dashboard.js.html — Dashboard va boshqa view'lar logikasi -->
+<script>
+/* ===================== GOOGLE CHARTS TAYYORLASH ===================== */
+var ChartsReady = new Promise(function (resolve) {
+  if (window.google && google.charts) {
+    google.charts.load('current', { packages: ['corechart', 'bar'] });
+    google.charts.setOnLoadCallback(resolve);
+  } else { resolve(); }
+});
+
+/** Joriy mavzu uchun grafik ranglari. */
+function chartTheme() {
+  var dark = document.documentElement.getAttribute('data-theme') === 'dark';
+  return {
+    backgroundColor: 'transparent',
+    legend: { textStyle: { color: dark ? '#e8eaed' : '#5f6368' } },
+    titleTextStyle: { color: dark ? '#e8eaed' : '#202124' },
+    hAxis: { textStyle: { color: dark ? '#9aa0a6' : '#5f6368' }, gridlines: { color: dark ? '#3c4043' : '#e8eaed' } },
+    vAxis: { textStyle: { color: dark ? '#9aa0a6' : '#5f6368' }, gridlines: { color: dark ? '#3c4043' : '#e8eaed' } },
+    chartArea: { width: '85%', height: '75%' }
+  };
+}
+
+/* ============================== DASH ================================= */
+var Dash = {};
+Dash._data = null;
+
+Dash.load = function (force) {
+  App.progress(30);
+  api('apiGetDashboard', State.token, {}).then(function (data) {
+    Dash._data = data;
+    App.progress(70);
+    App._setText('dashScope', Dash._scopeText(data.scope));
+    Dash._renderKpis(data.widgets);
+    Dash._renderTopEngineers(data.charts.topEngineers);
+    Dash._renderRecent(data.recentActivities);
+    ChartsReady.then(function () { Dash._renderCharts(data.charts); });
+    App.progress(100);
+  }).catch(function (e) { App.toast(e.message, 'error'); App.progress(0); });
+};
+
+Dash._scopeText = function (s) {
+  if (!s) return '';
+  if (s.role === 'ADMIN') return 'Butun tizim bo\'yicha umumiy holat';
+  if (s.role === 'REGION') return s.region + ' viloyati bo\'yicha';
+  if (s.role === 'DISTRICT') return s.district + ' tumani bo\'yicha';
+  return 'Shaxsiy arizalar bo\'yicha';
+};
+
+
+/* --------------------------- KPI KARTALAR ---------------------------- */
+Dash._renderKpis = function (w) {
+  var cards = [
+    { label: 'Jami arizalar', value: w.total, icon: 'description', color: 'var(--md-primary)' },
+    { label: 'Bajarilgan', value: w.completed, icon: 'check_circle', color: 'var(--md-success)' },
+    { label: 'Jarayonda', value: w.inProgress, icon: 'pending', color: 'var(--md-warning)' },
+    { label: 'Muddati o\'tgan', value: w.expired, icon: 'error', color: 'var(--md-danger)' },
+    { label: 'Bugun tugaydi', value: w.dueToday, icon: 'today', color: 'var(--md-orange)' },
+    { label: 'To\'lov kutilmoqda', value: w.waiting, icon: 'schedule', color: 'var(--md-orange)' },
+    { label: 'Turar joy', value: w.residential, icon: 'home', color: 'var(--md-primary)' },
+    { label: 'Noturar joy', value: w.nonResidential, icon: 'business', color: 'var(--md-secondary)' },
+    { label: 'Bajarilish', value: w.completionRate + '%', icon: 'task_alt', color: 'var(--md-success)' },
+    { label: 'O\'rtacha SLA', value: w.avgSla + '%', icon: 'speed', color: 'var(--md-primary)' },
+    { label: 'Joriy oy daromadi', value: w.monthlyIncomeFmt, icon: 'payments', color: 'var(--md-success)' },
+    { label: 'Yig\'ilgan to\'lov', value: w.totalPaidFmt, icon: 'account_balance_wallet', color: 'var(--md-primary)' }
+  ];
+  document.getElementById('kpiContainer').innerHTML = cards.map(function (c) {
+    return '<div class="kpi"><div class="icon" style="background:' + c.color + '">' +
+      '<span class="material-icons">' + c.icon + '</span></div>' +
+      '<div><div class="value">' + esc(c.value) + '</div>' +
+      '<div class="label">' + esc(c.label) + '</div></div></div>';
+  }).join('');
+};
+
+/* ------------------------ TOP MUHANDISLAR ---------------------------- */
+Dash._renderTopEngineers = function (list) {
+  var t = document.getElementById('topEngineersTable');
+  if (!list || !list.length) { t.innerHTML = '<tbody><tr><td>Ma\'lumot yo\'q</td></tr></tbody>'; return; }
+  var rows = list.map(function (e) {
+    return '<tr><td>' + e.rank + '</td><td>' + esc(e.name) + '</td><td>' + e.total +
+      '</td><td>' + e.completionRate + '%</td><td><span class="badge" style="background:' +
+      (e.avgSla >= 90 ? 'var(--md-success)' : e.avgSla >= 70 ? 'var(--md-warning)' : 'var(--md-danger)') +
+      '">' + e.avgSla + '%</span></td></tr>';
+  }).join('');
+  t.innerHTML = '<thead><tr><th>#</th><th>Muhandis</th><th>Jami</th><th>Bajarilish</th><th>SLA</th></tr></thead><tbody>' + rows + '</tbody>';
+};
+
+/* -------------------------- SO'NGGI FAOLLIK -------------------------- */
+Dash._renderRecent = function (list) {
+  var box = document.getElementById('recentActivities');
+  if (!list || !list.length) { box.innerHTML = '<div class="empty-state">Faollik yo\'q</div>'; return; }
+  box.innerHTML = list.map(function (r) {
+    return '<div class="flex gap-12" style="padding:10px 0; border-bottom:1px solid var(--divider);">' +
+      '<span class="dot" style="background:' + r.colorHex + '"></span>' +
+      '<div style="flex:1"><strong>' + esc(r.applicationNo) + '</strong> · ' + esc(r.customer) +
+      '<br><small style="color:var(--text-secondary)">' + esc(r.engineer) + ' · ' + esc(r.district) +
+      ' · ' + esc(r.registerDate) + '</small></div>' +
+      '<span class="badge" style="background:' + r.colorHex + '">' + esc(r.deadlineStatusLabel) + '</span></div>';
+  }).join('');
+};
+
+
+/* ----------------------------- GRAFIKLAR ----------------------------- */
+Dash._renderCharts = function (charts) {
+  Dash._charts = charts;
+  var th = chartTheme();
+
+  // Holat taqsimoti (pie)
+  var s = new google.visualization.DataTable();
+  s.addColumn('string', 'Holat'); s.addColumn('number', 'Soni');
+  charts.statusDistribution.forEach(function (x) { s.addRow([x.label, x.value]); });
+  new google.visualization.PieChart(document.getElementById('chartStatus')).draw(s,
+    Object.assign({}, th, { colors: charts.statusDistribution.map(function (x) { return x.color; }), pieHole: 0.4 }));
+
+  // Turar/Noturar (pie)
+  var r = new google.visualization.DataTable();
+  r.addColumn('string', 'Tur'); r.addColumn('number', 'Soni');
+  charts.residency.forEach(function (x) { r.addRow([x.label, x.value]); });
+  new google.visualization.PieChart(document.getElementById('chartResidency')).draw(r,
+    Object.assign({}, th, { colors: ['#1a73e8', '#5f6368'], pieHole: 0.4 }));
+
+  // Oylik tendensiya (combo)
+  var tr = new google.visualization.DataTable();
+  tr.addColumn('string', 'Oy'); tr.addColumn('number', 'Arizalar'); tr.addColumn('number', 'Daromad');
+  charts.monthlyTrend.forEach(function (m) { tr.addRow([m.label, m.applications, m.income]); });
+  new google.visualization.ComboChart(document.getElementById('chartTrend')).draw(tr,
+    Object.assign({}, th, {
+      seriesType: 'bars', colors: ['#1a73e8', '#2e7d32'],
+      series: { 1: { type: 'line', targetAxisIndex: 1 } }, legend: { position: 'top' }
+    }));
+
+  // To'lov holati (pie)
+  var p = new google.visualization.DataTable();
+  p.addColumn('string', 'Holat'); p.addColumn('number', 'Soni');
+  charts.payment.forEach(function (x) { p.addRow([x.label, x.value]); });
+  new google.visualization.PieChart(document.getElementById('chartPayment')).draw(p,
+    Object.assign({}, th, { colors: ['#2e7d32', '#f9a825', '#ef6c00', '#c62828'] }));
+};
+
+Dash.redraw = function () {
+  if (Dash._charts) ChartsReady.then(function () { Dash._renderCharts(Dash._charts); });
+  if (typeof FinanceUI !== 'undefined' && FinanceUI._data) FinanceUI._drawChart();
+};
+
+
+/* ============================ ARIZALAR =============================== */
+var Apps = {};
+Apps._filters = {};
+Apps._page = 1;
+Apps._initialized = false;
+
+Apps.init = function () {
+  if (Apps._initialized) { Apps.query(); return; }
+  Apps._initialized = true;
+  api('apiFilterOptions', State.token).then(function (opts) {
+    State.filterOptions = opts;
+    Apps._renderFilters(opts);
+    Apps.query();
+  }).catch(function (e) { App.toast(e.message, 'error'); });
+};
+
+Apps._renderFilters = function (o) {
+  function sel(id, label, items, valKey, labKey) {
+    var opts = '<option value="">' + label + ' (barchasi)</option>';
+    items.forEach(function (it) {
+      var v = valKey ? it[valKey] : it;
+      var l = labKey ? it[labKey] : it;
+      opts += '<option value="' + esc(v) + '">' + esc(l) + '</option>';
+    });
+    return '<div class="field" style="margin:0;"><label>' + label +
+      '</label><select class="select" id="' + id + '">' + opts + '</select></div>';
+  }
+  var html = '';
+  html += sel('fRegion', 'Viloyat', o.regions);
+  html += sel('fDistrict', 'Tuman', o.districts, 'name', 'name');
+  html += sel('fEngineer', 'Muhandis', o.engineers, 'name', 'name');
+  html += sel('fType', 'Ariza turi', o.applicationTypes);
+  html += sel('fResidency', 'Turar/Noturar', o.residencies, 'value', 'label');
+  html += sel('fDeadline', 'Muddat holati', o.deadlineStatuses, 'value', 'label');
+  html += sel('fPayment', 'To\'lov holati', o.paymentStatuses, 'value', 'label');
+  html += sel('fYear', 'Yil', o.years);
+  html += '<div class="field" style="margin:0;"><label>Sana (dan)</label><input type="date" class="input" id="fDateFrom"></div>';
+  html += '<div class="field" style="margin:0;"><label>Sana (gacha)</label><input type="date" class="input" id="fDateTo"></div>';
+  html += '<div class="field" style="margin:0;"><label>Kadastr / Mijoz</label><input type="text" class="input" id="fSearch" placeholder="Qidirish..."></div>';
+  document.getElementById('filtersContainer').innerHTML = html;
+};
+
+Apps._collectFilters = function () {
+  function v(id) { var el = document.getElementById(id); return el ? el.value : ''; }
+  return {
+    region: v('fRegion'), district: v('fDistrict'), engineer: v('fEngineer'),
+    applicationType: v('fType'), residency: v('fResidency'), deadlineStatus: v('fDeadline'),
+    paymentStatus: v('fPayment'), year: v('fYear'), dateFrom: v('fDateFrom'),
+    dateTo: v('fDateTo'), search: v('fSearch')
+  };
+};
+
+Apps.applyFilters = function () { Apps._page = 1; Apps.query(); };
+Apps.resetFilters = function () {
+  Apps._renderFilters(State.filterOptions); Apps._page = 1; Apps.query();
+};
+
+
+Apps.query = function () {
+  var filters = Apps._collectFilters();
+  filters.page = Apps._page;
+  filters.pageSize = 25;
+  Apps._filters = filters;
+  App.progress(30);
+  api('apiQueryTable', State.token, filters).then(function (res) {
+    App.progress(100);
+    Apps._render(res);
+  }).catch(function (e) { App.toast(e.message, 'error'); App.progress(0); });
+};
+
+Apps._render = function (res) {
+  App._setText('appsCount', 'Jami: ' + res.total + ' ta ariza (sahifa ' + res.page + '/' + res.pages + ')');
+  var t = document.getElementById('appsTable');
+  if (!res.rows.length) {
+    t.querySelector('thead').innerHTML = '';
+    t.querySelector('tbody').innerHTML = '<tr><td><div class="empty-state"><span class="material-icons">inbox</span><div>Ma\'lumot topilmadi</div></div></td></tr>';
+    document.getElementById('appsPagination').innerHTML = '';
+    return;
+  }
+  t.querySelector('thead').innerHTML = '<tr><th>Ariza</th><th>Mijoz</th><th>Muhandis</th>' +
+    '<th>Tuman</th><th>Tur</th><th>Muddat</th><th>Holat</th><th>Summa</th><th>To\'lov</th><th></th></tr>';
+  t.querySelector('tbody').innerHTML = res.rows.map(function (r) {
+    return '<tr><td><strong>' + esc(r.applicationNo || r.cadastreNo || r.transactionNo) + '</strong></td>' +
+      '<td>' + esc(r.customer) + '</td><td>' + esc(r.engineer) + '</td><td>' + esc(r.district) + '</td>' +
+      '<td>' + esc(r.residencyLabel) + '</td><td>' + esc(r.deadlineDate) + '</td>' +
+      '<td><span class="badge" style="background:' + r.colorHex + '">' + esc(r.deadlineStatusLabel) + '</span></td>' +
+      '<td>' + esc(r.amountFmt) + '</td>' +
+      '<td><span class="badge" style="background:' + Apps._payColor(r.paymentStatus) + '">' + esc(r.paymentStatusLabel) + '</span></td>' +
+      '<td><button class="btn-icon" onclick="Apps.showDetail(\'' + esc(r.rowId) + '\')"><span class="material-icons">visibility</span></button></td></tr>';
+  }).join('');
+  Apps._lastRows = res.rows;
+  Apps._renderPagination(res);
+};
+
+Apps._payColor = function (s) {
+  return { PAID: 'var(--md-success)', PARTIAL: 'var(--md-warning)',
+    WAITING: 'var(--md-orange)', UNPAID: 'var(--md-danger)' }[s] || 'var(--md-secondary)';
+};
+
+Apps._renderPagination = function (res) {
+  var html = '<button class="btn" ' + (res.page <= 1 ? 'disabled' : '') +
+    ' onclick="Apps.goPage(' + (res.page - 1) + ')"><span class="material-icons">chevron_left</span></button>' +
+    '<span>Sahifa ' + res.page + ' / ' + res.pages + '</span>' +
+    '<button class="btn" ' + (res.page >= res.pages ? 'disabled' : '') +
+    ' onclick="Apps.goPage(' + (res.page + 1) + ')"><span class="material-icons">chevron_right</span></button>';
+  document.getElementById('appsPagination').innerHTML = html;
+};
+
+Apps.goPage = function (p) { Apps._page = p; Apps.query(); };
+
+
+Apps.showDetail = function (rowId) {
+  var rows = (Apps._lastRows || []).concat(window._searchCache || []);
+  var r = null;
+  for (var i = 0; i < rows.length; i++) { if (rows[i].rowId === rowId) { r = rows[i]; break; } }
+  if (!r) { App.toast('Yozuv topilmadi', 'warning'); return; }
+  function row(l, v) { return '<tr><th style="width:40%">' + esc(l) + '</th><td>' + esc(v) + '</td></tr>'; }
+  var body = '<table class="data-table"><tbody>' +
+    row('Ariza raqami', r.applicationNo) + row('Tranzaksiya', r.transactionNo) +
+    row('Kadastr raqami', r.cadastreNo) + row('Mijoz', r.customer) +
+    row('JSHSHIR', r.pnfl) + row('STIR', r.tin) + row('Viloyat', r.region) +
+    row('Tuman', r.district) + row('Muhandis', r.engineer) +
+    row('Ariza turi', r.applicationType) + row('Obyekt turi', r.objectType) +
+    row('Turar/Noturar', r.residencyLabel) + row('Qabul sanasi', r.registerDate) +
+    row('Muddat', r.deadlineDate) + row('Bajarilgan', r.completeDate) +
+    row('Muddat holati', r.deadlineStatusLabel) + row('Qolgan kun', r.remainingDays) +
+    row('SLA', r.slaPercent + '%') + row('Summa', r.amountFmt) +
+    row('To\'langan', r.paidFmt) + row('Qarz', r.debtFmt) +
+    row('To\'lov holati', r.paymentStatusLabel) + row('Izoh', r.note) +
+    '</tbody></table>';
+  App.showModal('Ariza tafsilotlari', body,
+    '<button class="btn" onclick="App.closeModal(\'genericModal\')">Yopish</button>');
+};
+
+Apps.export = function (format) {
+  App.toast(format.toUpperCase() + ' tayyorlanmoqda...', 'info');
+  App.progress(40);
+  var filters = Apps._collectFilters();
+  api('apiExport', State.token, State.csrf, filters, format).then(function (res) {
+    App.progress(100);
+    Apps._download(res.base64, res.fileName, res.mimeType);
+    App.toast(res.rows + ' qator eksport qilindi', 'success');
+  }).catch(function (e) { App.toast(e.message, 'error'); App.progress(0); });
+};
+
+Apps._download = function (base64, fileName, mimeType) {
+  var bin = atob(base64);
+  var bytes = new Uint8Array(bin.length);
+  for (var i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+  var blob = new Blob([bytes], { type: mimeType });
+  var url = URL.createObjectURL(blob);
+  var a = document.createElement('a');
+  a.href = url; a.download = fileName; document.body.appendChild(a); a.click();
+  document.body.removeChild(a); setTimeout(function () { URL.revokeObjectURL(url); }, 1000);
+};
+
+Apps.print = function () {
+  App.progress(40);
+  var filters = Apps._collectFilters();
+  api('apiPrint', State.token, filters).then(function (res) {
+    App.progress(100);
+    var w = window.open('', '_blank');
+    w.document.write('<html><head><title>DKP Arizalar</title><style>' +
+      'table{width:100%;border-collapse:collapse;font-family:sans-serif;font-size:11px}' +
+      'th,td{border:1px solid #999;padding:4px 6px;text-align:left}th{background:#eee}</style></head><body>' +
+      '<h3>DKP Arizalar Nazorati — ' + res.rows + ' ta yozuv</h3>' + res.html + '</body></html>');
+    w.document.close(); w.focus(); setTimeout(function () { w.print(); }, 500);
+  }).catch(function (e) { App.toast(e.message, 'error'); App.progress(0); });
+};
+
+
+/* ============================== MOLIYA =============================== */
+var FinanceUI = {};
+FinanceUI._data = null;
+
+FinanceUI.load = function () {
+  App.progress(30);
+  api('apiGetDashboard', State.token, {}).then(function (d) {
+    App.progress(100);
+    FinanceUI._data = d;
+    var w = d.widgets;
+    var kpi = [
+      { label: 'Jami summa', value: w.totalPaidFmt, icon: 'account_balance', color: 'var(--md-primary)' },
+      { label: 'Yig\'ilgan to\'lov', value: w.totalPaidFmt, icon: 'payments', color: 'var(--md-success)' },
+      { label: 'Kutilayotgan to\'lov', value: w.totalDebtFmt, icon: 'schedule', color: 'var(--md-orange)' },
+      { label: 'Yig\'ilish darajasi', value: w.collectionRate + '%', icon: 'percent', color: 'var(--md-primary)' },
+      { label: 'Joriy oy daromadi', value: w.monthlyIncomeFmt, icon: 'trending_up', color: 'var(--md-success)' }
+    ];
+    document.getElementById('financeKpi').innerHTML = kpi.map(function (c) {
+      return '<div class="kpi"><div class="icon" style="background:' + c.color + '">' +
+        '<span class="material-icons">' + c.icon + '</span></div><div><div class="value" style="font-size:18px">' +
+        esc(c.value) + '</div><div class="label">' + esc(c.label) + '</div></div></div>';
+    }).join('');
+    FinanceUI._renderRegionTable(d.finance.byRegion);
+    ChartsReady.then(function () { FinanceUI._drawChart(); });
+  }).catch(function (e) { App.toast(e.message, 'error'); App.progress(0); });
+};
+
+FinanceUI._drawChart = function () {
+  if (!FinanceUI._data) return;
+  var monthly = FinanceUI._data.finance.monthly || [];
+  var dt = new google.visualization.DataTable();
+  dt.addColumn('string', 'Oy'); dt.addColumn('number', 'Daromad'); dt.addColumn('number', 'Qarz');
+  monthly.forEach(function (m) { dt.addRow([m.label, m.paid, m.debt]); });
+  new google.visualization.ColumnChart(document.getElementById('chartFinanceMonthly')).draw(dt,
+    Object.assign({}, chartTheme(), { colors: ['#2e7d32', '#c62828'], legend: { position: 'top' }, isStacked: false }));
+};
+
+FinanceUI._renderRegionTable = function (list) {
+  var t = document.getElementById('financeRegionTable');
+  if (!list || !list.length) { t.innerHTML = '<tbody><tr><td>Ma\'lumot yo\'q</td></tr></tbody>'; return; }
+  t.innerHTML = '<thead><tr><th>Viloyat</th><th>Arizalar</th><th>To\'langan</th><th>Qarz</th><th>%</th></tr></thead><tbody>' +
+    list.map(function (g) {
+      return '<tr><td>' + esc(g.name) + '</td><td>' + g.count + '</td><td>' +
+        Number(g.paid).toLocaleString('ru-RU') + '</td><td>' + Number(g.debt).toLocaleString('ru-RU') +
+        '</td><td>' + g.collectionRate + '%</td></tr>';
+    }).join('') + '</tbody>';
+};
+
+/* ============================ REYTINGLAR ============================= */
+var RankingsUI = {};
+RankingsUI.load = function () {
+  api('apiGetDashboard', State.token, {}).then(function (d) {
+    RankingsUI._table('rankEngineers', d.rankings.engineers, 'Muhandis');
+    RankingsUI._table('rankDistricts', d.rankings.districts, 'Tuman');
+    RankingsUI._table('rankRegions', d.rankings.regions, 'Viloyat');
+  }).catch(function (e) { App.toast(e.message, 'error'); });
+};
+RankingsUI._table = function (id, list, label) {
+  var t = document.getElementById(id);
+  if (!list || !list.length) { t.innerHTML = '<tbody><tr><td>Ma\'lumot yo\'q</td></tr></tbody>'; return; }
+  t.innerHTML = '<thead><tr><th>#</th><th>' + label + '</th><th>Jami</th><th>%</th><th>Ball</th></tr></thead><tbody>' +
+    list.map(function (e) {
+      return '<tr><td>' + e.rank + '</td><td>' + esc(e.name) + '</td><td>' + e.total +
+        '</td><td>' + e.completionRate + '%</td><td><strong>' + e.score + '</strong></td></tr>';
+    }).join('') + '</tbody>';
+};
+
+
+/* ============================ HISOBOTLAR ============================= */
+var ReportsUI = {};
+ReportsUI.load = function () {
+  var type = document.getElementById('reportType').value;
+  App.progress(30);
+  api('apiGetReport', State.token, type, {}).then(function (rep) {
+    App.progress(100);
+    App._setText('reportTitle', rep.title + ' (' + rep.total + ')');
+    var t = document.getElementById('reportTable');
+    var head = '<thead><tr>' + rep.columns.map(function (c) { return '<th>' + esc(c) + '</th>'; }).join('') + '</tr></thead>';
+    var body = '<tbody>' + (rep.rows.length ? rep.rows.map(function (row) {
+      return '<tr>' + row.map(function (c) { return '<td>' + esc(c) + '</td>'; }).join('') + '</tr>';
+    }).join('') : '<tr><td colspan="' + rep.columns.length + '"><div class="empty-state">Ma\'lumot yo\'q</div></td></tr>') + '</tbody>';
+    t.innerHTML = head + body;
+  }).catch(function (e) { App.toast(e.message, 'error'); App.progress(0); });
+};
+
+/* ============================== IMPORT =============================== */
+var ImportUI = {};
+ImportUI.init = function () {
+  api('apiLastImport', State.token).then(function (info) {
+    var box = document.getElementById('lastImportInfo');
+    if (!info) { box.innerHTML = 'Hali import qilinmagan.'; return; }
+    box.innerHTML = '<strong>So\'nggi import:</strong> ' + esc(info.startedAt) +
+      '<br>Holat: <strong>' + esc(info.status) + '</strong> · Qatorlar: ' + esc(info.validRows) +
+      '/' + esc(info.totalRows) + ' · Davomiyligi: ' + Math.round((info.durationMs || 0) / 1000) + ' s';
+  }).catch(function () {});
+};
+
+ImportUI.run = function () {
+  var btn = document.getElementById('importBtn');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="material-icons" style="animation:spin 0.8s linear infinite">autorenew</span> Import qilinmoqda...';
+  document.getElementById('importProgress').classList.remove('hidden');
+  document.getElementById('importBar').style.width = '15%';
+  App.progress(20);
+  api('apiRunImport', State.token, State.csrf).then(function (rep) {
+    document.getElementById('importBar').style.width = '100%';
+    App.progress(100);
+    var steps = (rep.steps || []).map(function (s) {
+      var color = s.status === 'OK' ? 'var(--md-success)' : s.status === 'ERROR' ? 'var(--md-danger)' : 'var(--text-secondary)';
+      return '<div style="color:' + color + '">• ' + esc(s.name) + ': ' + esc(s.status) +
+        (s.detail ? ' — ' + esc(s.detail) : '') + '</div>';
+    }).join('');
+    document.getElementById('importSteps').innerHTML = steps;
+    if (rep.success) {
+      App.toast('Import muvaffaqiyatli: ' + rep.validRows + '/' + rep.totalRows, 'success');
+      Dash.load(true); ImportUI.init(); App.loadNotifications();
+    } else {
+      App.toast('Import xatosi: ' + rep.error, 'error');
+    }
+  }).catch(function (e) { App.toast(e.message, 'error'); App.progress(0); })
+    .then(function () {
+      btn.disabled = false;
+      btn.innerHTML = '<span class="material-icons">play_arrow</span> Importni boshlash';
+    });
+};
+
+
+/* ========================= FOYDALANUVCHILAR ========================= */
+var UsersUI = {};
+UsersUI.load = function () {
+  api('apiListUsers', State.token).then(function (list) {
+    var t = document.getElementById('usersTable');
+    t.innerHTML = '<thead><tr><th>Login</th><th>F.I.O / Rol</th><th>Hudud</th>' +
+      '<th>Holat</th><th>Oxirgi kirish</th><th>Amallar</th></tr></thead><tbody>' +
+      list.map(function (u) {
+        var area = [u.region, u.district].filter(Boolean).join(' / ') || '—';
+        return '<tr><td><strong>' + esc(u.username) + '</strong></td><td>' + esc(u.roleLabel) +
+          '</td><td>' + esc(area) + '</td><td><span class="badge" style="background:' +
+          (/(active|faol)/i.test(u.status) ? 'var(--md-success)' : 'var(--md-danger)') + '">' +
+          esc(u.status || 'active') + '</span></td><td>' + esc(u.lastLogin || '—') + '</td>' +
+          '<td><button class="btn-icon" title="Parolni tiklash" onclick="UsersUI.reset(\'' + esc(u.username) +
+          '\')"><span class="material-icons">lock_reset</span></button></td></tr>';
+      }).join('') + '</tbody>';
+  }).catch(function (e) { App.toast(e.message, 'error'); });
+};
+
+UsersUI.openCreate = function () {
+  var roles = [['ADMIN', 'Administrator'], ['REGION', 'Viloyat'], ['DISTRICT', 'Tuman'], ['ENGINEER', 'Kadastr muhandisi']];
+  var body = '<div class="field"><label>Login</label><input class="input" id="nuUsername"></div>' +
+    '<div class="field"><label>Parol (bo\'sh — avtomatik)</label><input class="input" id="nuPassword"></div>' +
+    '<div class="field"><label>Rol</label><select class="select" id="nuRole">' +
+    roles.map(function (r) { return '<option value="' + r[0] + '">' + r[1] + '</option>'; }).join('') + '</select></div>' +
+    '<div class="field"><label>Viloyat</label><input class="input" id="nuRegion"></div>' +
+    '<div class="field"><label>Tuman</label><input class="input" id="nuDistrict"></div>' +
+    '<div class="field"><label>Xodim ID</label><input class="input" id="nuEmployeeId"></div>';
+  App.showModal('Yangi foydalanuvchi', body,
+    '<button class="btn" onclick="App.closeModal(\'genericModal\')">Bekor</button>' +
+    '<button class="btn btn-primary" onclick="UsersUI.create()">Yaratish</button>');
+};
+
+UsersUI.create = function () {
+  function v(id) { return document.getElementById(id).value.trim(); }
+  var data = { username: v('nuUsername'), password: v('nuPassword'), role: v('nuRole'),
+    region: v('nuRegion'), district: v('nuDistrict'), employeeId: v('nuEmployeeId') };
+  api('apiCreateUser', State.token, State.csrf, data).then(function (res) {
+    App.closeModal('genericModal');
+    var msg = 'Foydalanuvchi yaratildi.';
+    if (res.generatedPassword) msg += ' Parol: ' + res.generatedPassword;
+    App.toast(msg, 'success');
+    UsersUI.load();
+  }).catch(function (e) { App.toast(e.message, 'error'); });
+};
+
+UsersUI.reset = function (username) {
+  if (!confirm(username + ' uchun parolni tiklaysizmi?')) return;
+  api('apiResetPassword', State.token, State.csrf, username).then(function (res) {
+    App.toast('Yangi parol: ' + res.password, 'success');
+  }).catch(function (e) { App.toast(e.message, 'error'); });
+};
+
+
+/* ============================ AUDIT LOGLAR ========================== */
+var LogsUI = {};
+LogsUI.load = function (type) {
+  api('apiGetLogs', State.token, type, 150).then(function (rows) {
+    var t = document.getElementById('logsTable');
+    if (!rows || !rows.length) {
+      t.innerHTML = '<tbody><tr><td><div class="empty-state">Log yozuvlari yo\'q</div></td></tr></tbody>';
+      return;
+    }
+    var cols = Object.keys(rows[0]).filter(function (k) { return k !== '_row'; });
+    t.innerHTML = '<thead><tr>' + cols.map(function (c) { return '<th>' + esc(c) + '</th>'; }).join('') +
+      '</tr></thead><tbody>' + rows.map(function (r) {
+        return '<tr>' + cols.map(function (c) { return '<td>' + esc(r[c]) + '</td>'; }).join('') + '</tr>';
+      }).join('') + '</tbody>';
+  }).catch(function (e) { App.toast(e.message, 'error'); });
+};

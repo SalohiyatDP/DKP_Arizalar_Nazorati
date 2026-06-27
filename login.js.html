@@ -1,0 +1,51 @@
+<!-- login.js.html — Tizimga kirish logikasi -->
+<script>
+var Auth = {};
+
+/**
+ * Login formasini yuboradi.
+ * @param {Event} ev
+ * @returns {boolean}
+ */
+Auth.submitLogin = function (ev) {
+  ev.preventDefault();
+  var errBox = document.getElementById('loginError');
+  var btn = document.getElementById('loginBtn');
+  errBox.classList.add('hidden');
+
+  var payload = {
+    username: document.getElementById('loginUsername').value.trim(),
+    password: document.getElementById('loginPassword').value,
+    rememberMe: document.getElementById('rememberMe').checked
+  };
+
+  if (!payload.username || !payload.password) {
+    errBox.textContent = 'Foydalanuvchi nomi va parolni kiriting.';
+    errBox.classList.remove('hidden');
+    return false;
+  }
+
+  btn.disabled = true;
+  btn.innerHTML = '<span class="material-icons" style="animation:spin 0.8s linear infinite">autorenew</span> Tekshirilmoqda...';
+  App.progress(40);
+
+  api('apiLogin', payload).then(function (data) {
+    App.progress(100);
+    var user = data.user;
+    user.mustChangePassword = data.mustChangePassword === true;
+    App.saveSession({ token: data.token, csrf: data.csrf, user: user });
+    App.toast('Xush kelibsiz, ' + (user.fullName || user.username) + '!', 'success');
+    document.getElementById('loginForm').reset();
+    App._enterApp();
+  }).catch(function (e) {
+    App.progress(0);
+    errBox.textContent = e.message || 'Kirishda xatolik.';
+    errBox.classList.remove('hidden');
+  }).then(function () {
+    btn.disabled = false;
+    btn.innerHTML = '<span class="material-icons">login</span> Kirish';
+  });
+
+  return false;
+};
+</script>

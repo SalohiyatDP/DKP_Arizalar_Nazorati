@@ -1,0 +1,170 @@
+<!-- dashboard.html — Asosiy ish maydoni (barcha sub-view'lar) -->
+
+<!-- ============================ BOSHQARUV PANELI ======================== -->
+<section id="view-dashboard" class="view">
+  <div class="flex-between wrap mb-16">
+    <div>
+      <div class="page-title">Boshqaruv paneli</div>
+      <div class="page-subtitle" id="dashScope">Umumiy holat</div>
+    </div>
+    <button class="btn" onclick="Dash.load(true)"><span class="material-icons">refresh</span> Yangilash</button>
+  </div>
+
+  <div class="grid kpi-grid" id="kpiContainer"><!-- KPI kartalar JS bilan to'ldiriladi --></div>
+
+  <div class="grid charts-grid">
+    <div class="card"><div class="card-title"><span class="material-icons">donut_large</span> Holat taqsimoti</div>
+      <div id="chartStatus" class="chart-canvas"></div></div>
+    <div class="card"><div class="card-title"><span class="material-icons">home_work</span> Turar / Noturar</div>
+      <div id="chartResidency" class="chart-canvas"></div></div>
+    <div class="card"><div class="card-title"><span class="material-icons">trending_up</span> Oylik tendensiya</div>
+      <div id="chartTrend" class="chart-canvas"></div></div>
+    <div class="card"><div class="card-title"><span class="material-icons">payments</span> To'lov holati</div>
+      <div id="chartPayment" class="chart-canvas"></div></div>
+  </div>
+
+  <div class="grid charts-grid">
+    <div class="card"><div class="card-title"><span class="material-icons">military_tech</span> Top 10 muhandis</div>
+      <div class="table-wrap"><table class="data-table" id="topEngineersTable"></table></div></div>
+    <div class="card"><div class="card-title"><span class="material-icons">history</span> So'nggi faollik</div>
+      <div id="recentActivities"></div></div>
+  </div>
+</section>
+
+
+<!-- ============================== ARIZALAR ============================== -->
+<section id="view-applications" class="view hidden">
+  <div class="flex-between wrap mb-16">
+    <div><div class="page-title">Arizalar</div>
+      <div class="page-subtitle">Filtrlash, qidirish va eksport</div></div>
+    <div class="flex gap-8 wrap no-print">
+      <button class="btn" onclick="Apps.export('csv')"><span class="material-icons">description</span> CSV</button>
+      <button class="btn" onclick="Apps.export('xlsx')"><span class="material-icons">grid_on</span> Excel</button>
+      <button class="btn" onclick="Apps.export('pdf')"><span class="material-icons">picture_as_pdf</span> PDF</button>
+      <button class="btn" onclick="Apps.print()"><span class="material-icons">print</span> Chop etish</button>
+    </div>
+  </div>
+
+  <div class="card mb-16 no-print">
+    <div class="card-title"><span class="material-icons">filter_alt</span> Filtrlar</div>
+    <div class="filters-grid" id="filtersContainer"></div>
+    <div class="flex gap-8 mt-16 wrap">
+      <button class="btn btn-primary" onclick="Apps.applyFilters()"><span class="material-icons">search</span> Qo'llash</button>
+      <button class="btn" onclick="Apps.resetFilters()"><span class="material-icons">clear</span> Tozalash</button>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="flex-between mb-16"><span id="appsCount" style="color:var(--text-secondary)">—</span></div>
+    <div class="table-wrap"><table class="data-table" id="appsTable">
+      <thead></thead><tbody></tbody></table></div>
+    <div class="pagination" id="appsPagination"></div>
+  </div>
+</section>
+
+<!-- =============================== MOLIYA =============================== -->
+<section id="view-finance" class="view hidden">
+  <div class="page-title">Moliya</div>
+  <div class="page-subtitle mb-16">Daromad, qarz va to'lovlar tahlili</div>
+  <div class="grid kpi-grid" id="financeKpi"></div>
+  <div class="grid charts-grid">
+    <div class="card"><div class="card-title"><span class="material-icons">bar_chart</span> Oylik daromad</div>
+      <div id="chartFinanceMonthly" class="chart-canvas"></div></div>
+    <div class="card"><div class="card-title"><span class="material-icons">map</span> Viloyatlar bo'yicha</div>
+      <div class="table-wrap"><table class="data-table" id="financeRegionTable"></table></div></div>
+  </div>
+</section>
+
+
+<!-- ============================= HISOBOTLAR ============================= -->
+<section id="view-reports" class="view hidden">
+  <div class="page-title">Hisobotlar</div>
+  <div class="page-subtitle mb-16">Tayyor hisobotlarni tanlang</div>
+  <div class="card mb-16 no-print">
+    <div class="filters-grid">
+      <div class="field" style="margin:0;">
+        <label>Hisobot turi</label>
+        <select class="select" id="reportType">
+          <option value="expired">Muddati o'tgan arizalar</option>
+          <option value="dueToday">Bugun tugaydigan arizalar</option>
+          <option value="engineer">Muhandislar hisoboti</option>
+          <option value="district">Tumanlar hisoboti</option>
+          <option value="region">Viloyatlar hisoboti</option>
+          <option value="finance">Moliyaviy hisobot</option>
+          <option value="monthly">Oylik hisobot</option>
+          <option value="performance">Samaradorlik hisoboti</option>
+          <option value="payment">To'lov hisoboti</option>
+        </select>
+      </div>
+      <div class="field" style="margin:0; align-self:end;">
+        <button class="btn btn-primary btn-block" onclick="ReportsUI.load()">
+          <span class="material-icons">assessment</span> Hisobotni ko'rish</button>
+      </div>
+    </div>
+  </div>
+  <div class="card">
+    <div class="flex-between mb-16"><h3 id="reportTitle">—</h3>
+      <button class="btn no-print" onclick="window.print()"><span class="material-icons">print</span> Chop etish</button></div>
+    <div class="table-wrap"><table class="data-table" id="reportTable"></table></div>
+  </div>
+</section>
+
+<!-- ============================== REYTINGLAR =========================== -->
+<section id="view-rankings" class="view hidden">
+  <div class="page-title">Reytinglar</div>
+  <div class="page-subtitle mb-16">Muhandis, tuman va viloyat samaradorligi</div>
+  <div class="grid charts-grid">
+    <div class="card"><div class="card-title"><span class="material-icons">engineering</span> Muhandislar</div>
+      <div class="table-wrap"><table class="data-table" id="rankEngineers"></table></div></div>
+    <div class="card"><div class="card-title"><span class="material-icons">location_city</span> Tumanlar</div>
+      <div class="table-wrap"><table class="data-table" id="rankDistricts"></table></div></div>
+    <div class="card"><div class="card-title"><span class="material-icons">public</span> Viloyatlar</div>
+      <div class="table-wrap"><table class="data-table" id="rankRegions"></table></div></div>
+  </div>
+</section>
+
+
+<!-- =============================== IMPORT =============================== -->
+<section id="view-import" class="view hidden">
+  <div class="page-title">Ma'lumotlarni import qilish</div>
+  <div class="page-subtitle mb-16">HISOBOT varag'idan bir tugma bilan import</div>
+  <div class="card" style="max-width:640px;">
+    <div class="card-title"><span class="material-icons">cloud_upload</span> Bir tugmali import</div>
+    <p style="color:var(--text-secondary); margin-bottom:16px;">
+      Import jarayoni: Zaxiralash → Tekshirish → Transformatsiya → Biznes mantiq →
+      Statistika → Moliya → Kesh → Dashboard. Xato yuz bersa, ma'lumot avtomatik tiklanadi.</p>
+    <div id="lastImportInfo" style="background:var(--bg-surface-2); padding:14px; border-radius:8px;
+      margin-bottom:16px; font-size:13px;">So'nggi import ma'lumoti yuklanmoqda...</div>
+    <button class="btn btn-primary" id="importBtn" onclick="ImportUI.run()">
+      <span class="material-icons">play_arrow</span> Importni boshlash</button>
+    <div id="importProgress" class="hidden mt-16">
+      <div class="progress-bar"><div class="progress-fill" id="importBar" style="width:0%"></div></div>
+      <div id="importSteps" style="margin-top:12px; font-size:13px;"></div>
+    </div>
+  </div>
+</section>
+
+<!-- ========================== FOYDALANUVCHILAR ========================= -->
+<section id="view-users" class="view hidden">
+  <div class="flex-between wrap mb-16">
+    <div><div class="page-title">Foydalanuvchilar</div>
+      <div class="page-subtitle">Hisoblarni boshqarish</div></div>
+    <button class="btn btn-primary" onclick="UsersUI.openCreate()"><span class="material-icons">person_add</span> Yangi</button>
+  </div>
+  <div class="card"><div class="table-wrap"><table class="data-table" id="usersTable"></table></div></div>
+</section>
+
+<!-- ============================= AUDIT LOGLAR ========================== -->
+<section id="view-logs" class="view hidden">
+  <div class="page-title">Audit loglar</div>
+  <div class="page-subtitle mb-16">Tizim faolligi tarixi</div>
+  <div class="card mb-16">
+    <div class="flex gap-8 wrap">
+      <button class="btn btn-primary" onclick="LogsUI.load('action')">Amallar</button>
+      <button class="btn" onclick="LogsUI.load('login')">Kirishlar</button>
+      <button class="btn" onclick="LogsUI.load('import')">Importlar</button>
+      <button class="btn" onclick="LogsUI.load('export')">Eksportlar</button>
+    </div>
+  </div>
+  <div class="card"><div class="table-wrap"><table class="data-table" id="logsTable"></table></div></div>
+</section>

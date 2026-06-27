@@ -1,0 +1,37 @@
+<!-- login.html — Tizimga kirish sahifasi -->
+<div class="login-wrap">
+  <div class="login-card">
+    <div class="login-logo">DKP</div>
+    <h1>DKP Arizalar Nazorati</h1>
+    <p class="sub">Davlat Kadastr Palatasi · Tahliliy platforma</p>
+
+    <form id="loginForm" onsubmit="return Auth.submitLogin(event)">
+      <div class="field">
+        <label for="loginUsername">Foydalanuvchi nomi</label>
+        <input type="text" class="input" id="loginUsername" autocomplete="username"
+          placeholder="Login" required autofocus>
+      </div>
+      <div class="field">
+        <label for="loginPassword">Parol</label>
+        <input type="password" class="input" id="loginPassword" autocomplete="current-password"
+          placeholder="Parol" required>
+      </div>
+      <div class="checkbox-row">
+        <input type="checkbox" id="rememberMe">
+        <label for="rememberMe" style="margin:0; cursor:pointer;">Meni eslab qol</label>
+      </div>
+
+      <div id="loginError" class="hidden" style="background:var(--md-danger); color:#fff;
+        padding:10px 14px; border-radius:8px; margin-bottom:16px; font-size:13px;"></div>
+
+      <button type="submit" class="btn btn-primary btn-block" id="loginBtn">
+        <span class="material-icons">login</span> Kirish
+      </button>
+    </form>
+
+    <p style="text-align:center; margin-top:20px; font-size:12px; color:var(--text-disabled)">
+      Standart kirish: <strong>admin</strong> / <strong>Admin@2026</strong><br>
+      (birinchi kirishdan so'ng parolni o'zgartiring)
+    </p>
+  </div>
+</div>

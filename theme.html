@@ -1,0 +1,92 @@
+<!-- ==========================================================================
+     theme.html — Material Design 3 mavzu o'zgaruvchilari (Dark/Light)
+     ========================================================================== -->
+<style>
+  :root {
+    /* Asosiy ranglar (Light mode) */
+    --md-primary: #1a73e8;
+    --md-primary-dark: #1557b0;
+    --md-primary-light: #e8f0fe;
+    --md-secondary: #5f6368;
+    --md-success: #2e7d32;
+    --md-warning: #f9a825;
+    --md-orange: #ef6c00;
+    --md-danger: #c62828;
+    --md-black-status: #212121;
+
+    /* Yuza va fon */
+    --bg-body: #f1f3f4;
+    --bg-surface: #ffffff;
+    --bg-surface-2: #f8f9fa;
+    --bg-elevated: #ffffff;
+    --bg-hover: #f1f3f4;
+    --bg-overlay: rgba(32, 33, 36, 0.5);
+
+    /* Matn */
+    --text-primary: #202124;
+    --text-secondary: #5f6368;
+    --text-disabled: #9aa0a6;
+    --text-on-primary: #ffffff;
+
+    /* Chegara va soyalar */
+    --border-color: #dadce0;
+    --divider: #e8eaed;
+    --shadow-1: 0 1px 2px rgba(60,64,67,0.12), 0 1px 3px rgba(60,64,67,0.08);
+    --shadow-2: 0 1px 3px rgba(60,64,67,0.16), 0 4px 8px rgba(60,64,67,0.10);
+    --shadow-3: 0 4px 8px rgba(60,64,67,0.16), 0 8px 24px rgba(60,64,67,0.12);
+
+    /* O'lchamlar */
+    --radius-sm: 8px;
+    --radius-md: 12px;
+    --radius-lg: 16px;
+    --radius-pill: 999px;
+    --sidebar-width: 264px;
+    --navbar-height: 64px;
+    --transition: 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+
+    --font-family: 'Google Sans', 'Roboto', 'Segoe UI', system-ui, -apple-system, sans-serif;
+  }
+
+  [data-theme="dark"] {
+    --md-primary: #8ab4f8;
+    --md-primary-dark: #669df6;
+    --md-primary-light: #28324a;
+    --md-secondary: #9aa0a6;
+    --md-success: #81c995;
+    --md-warning: #fdd663;
+    --md-orange: #fcad70;
+    --md-danger: #f28b82;
+    --md-black-status: #000000;
+
+    --bg-body: #202124;
+    --bg-surface: #292a2d;
+    --bg-surface-2: #303134;
+    --bg-elevated: #35363a;
+    --bg-hover: #3c4043;
+    --bg-overlay: rgba(0, 0, 0, 0.6);
+
+    --text-primary: #e8eaed;
+    --text-secondary: #9aa0a6;
+    --text-disabled: #5f6368;
+    --text-on-primary: #202124;
+
+    --border-color: #3c4043;
+    --divider: #3c4043;
+    --shadow-1: 0 1px 2px rgba(0,0,0,0.3), 0 1px 3px rgba(0,0,0,0.2);
+    --shadow-2: 0 1px 3px rgba(0,0,0,0.4), 0 4px 8px rgba(0,0,0,0.3);
+    --shadow-3: 0 4px 8px rgba(0,0,0,0.4), 0 8px 24px rgba(0,0,0,0.35);
+  }
+
+  /* Status ranglari (yordamchi klasslar) */
+  .status-green  { color: var(--md-success); }
+  .status-yellow { color: var(--md-warning); }
+  .status-orange { color: var(--md-orange); }
+  .status-red    { color: var(--md-danger); }
+  .status-black  { color: var(--text-primary); }
+
+  .bg-green  { background: var(--md-success); }
+  .bg-yellow { background: var(--md-warning); }
+  .bg-orange { background: var(--md-orange); }
+  .bg-red    { background: var(--md-danger); }
+  .bg-black  { background: var(--md-black-status); }
+</style>

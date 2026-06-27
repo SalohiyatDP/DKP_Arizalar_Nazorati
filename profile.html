@@ -1,0 +1,29 @@
+<!-- profile.html — Foydalanuvchi profili -->
+<div class="flex-between wrap mb-16">
+  <div><div class="page-title">Profil</div>
+    <div class="page-subtitle">Hisob ma'lumotlari</div></div>
+  <button class="btn" onclick="App.navigate('dashboard')"><span class="material-icons">arrow_back</span> Orqaga</button>
+</div>
+
+<div class="card" style="max-width:560px;">
+  <div class="flex gap-12 mb-16" style="align-items:center;">
+    <div class="avatar" id="profileBigAvatar" style="width:64px; height:64px; font-size:26px;">U</div>
+    <div>
+      <div style="font-size:20px; font-weight:600;" id="profileFullName">—</div>
+      <div style="color:var(--text-secondary);" id="profileUsername">—</div>
+    </div>
+  </div>
+  <table class="data-table">
+    <tbody>
+      <tr><th style="width:40%;">Rol</th><td id="pfRole">—</td></tr>
+      <tr><th>Viloyat</th><td id="pfRegion">—</td></tr>
+      <tr><th>Tuman</th><td id="pfDistrict">—</td></tr>
+      <tr><th>Xodim ID</th><td id="pfEmployeeId">—</td></tr>
+      <tr><th>Ruxsatlar</th><td id="pfPermissions">—</td></tr>
+    </tbody>
+  </table>
+  <div class="flex gap-8 mt-16">
+    <button class="btn btn-primary" onclick="App.navigate('changePassword')">
+      <span class="material-icons">lock</span> Parolni o'zgartirish</button>
+  </div>
+</div>

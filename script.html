@@ -1,0 +1,381 @@
+<!-- script.html — Asosiy klient logikasi (App yadrosi, Profile, API helper) -->
+<script>
+/* ============================ HOLAT (STATE) ============================ */
+var State = {
+  token: null, csrf: null, user: null,
+  filterOptions: null, currentView: 'dashboard', searchTimer: null
+};
+
+/* ========================== API YORDAMCHISI =========================== */
+/**
+ * Server funksiyasini Promise sifatida chaqiradi (google.script.run).
+ * @param {string} method
+ * @returns {Promise<*>}
+ */
+function api(method) {
+  var args = Array.prototype.slice.call(arguments, 1);
+  return new Promise(function (resolve, reject) {
+    google.script.run
+      .withSuccessHandler(function (res) {
+        if (res && res.ok) return resolve(res.data);
+        var err = (res && res.error) || 'Noma\'lum xato';
+        if (res && res.code === 'AUTH') App.handleAuthExpired();
+        reject(new Error(err));
+      })
+      .withFailureHandler(function (e) { reject(e); })
+      [method].apply(google.script.run, args);
+  });
+}
+
+/** HTML matnni xavfsiz ekranlash (XSS). */
+function esc(v) {
+  if (v == null) return '';
+  return String(v).replace(/&/g, '&amp;').replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+}
+
+/* ========================== APP NAMESPACE ============================= */
+var App = {};
+
+
+/* --------------------------- INIT / SESSIYA -------------------------- */
+App.init = function () {
+  App._initTheme();
+  App._bindGlobalClicks();
+  var saved = App._loadSession();
+  if (saved && saved.token) {
+    State.token = saved.token; State.csrf = saved.csrf; State.user = saved.user;
+    App._enterApp();
+  } else {
+    App._showLogin();
+  }
+  App.hideLoading();
+};
+
+App._loadSession = function () {
+  try { return JSON.parse(localStorage.getItem('dkp_session') || 'null'); }
+  catch (e) { return null; }
+};
+
+App.saveSession = function (data) {
+  State.token = data.token; State.csrf = data.csrf; State.user = data.user;
+  try { localStorage.setItem('dkp_session', JSON.stringify(data)); } catch (e) {}
+};
+
+App.clearSession = function () {
+  State.token = State.csrf = State.user = null;
+  try { localStorage.removeItem('dkp_session'); } catch (e) {}
+};
+
+App._showLogin = function () {
+  document.getElementById('loginView').classList.remove('hidden');
+  document.getElementById('appShell').classList.remove('active');
+};
+
+App._enterApp = function () {
+  document.getElementById('loginView').classList.add('hidden');
+  document.getElementById('appShell').classList.add('active');
+  App._renderUser();
+  App.applyPermissions();
+  Profile.loadProfile(State.user);
+  Dash.load();
+  App.loadNotifications();
+  if (State.user && State.user.mustChangePassword) App.openModal('forcePasswordModal');
+};
+
+App.handleAuthExpired = function () {
+  App.clearSession();
+  App.toast('Sessiya tugadi. Qaytadan kiring.', 'warning');
+  setTimeout(function () { location.reload(); }, 1200);
+};
+
+
+/* ------------------------------ RENDER ------------------------------- */
+App._setText = function (id, text) {
+  var el = document.getElementById(id);
+  if (el) el.textContent = text;
+};
+
+App._renderUser = function () {
+  var u = State.user || {};
+  var initials = (u.fullName || u.username || 'U').charAt(0).toUpperCase();
+  App._setText('userAvatar', initials);
+  App._setText('profileName', u.fullName || u.username);
+  App._setText('profileRole', u.roleLabel || u.role);
+};
+
+/** Ruxsatlarga ko'ra menyu elementlarini ko'rsatadi/yashiradi. */
+App.applyPermissions = function () {
+  var perms = (State.user && State.user.permissions) || [];
+  var els = document.querySelectorAll('[data-perm]');
+  for (var i = 0; i < els.length; i++) {
+    var need = els[i].getAttribute('data-perm');
+    els[i].style.display = perms.indexOf(need) !== -1 ? '' : 'none';
+  }
+};
+
+/* ---------------------------- NAVIGATSIYA ---------------------------- */
+/** Sahifalar orasida (dashboard/profile/changePassword) o'tish. */
+App.navigate = function (page) {
+  var pages = document.querySelectorAll('.page');
+  for (var i = 0; i < pages.length; i++) pages[i].classList.add('hidden');
+  var target = document.getElementById('page-' + page);
+  if (target) target.classList.remove('hidden');
+  App._closeAllDropdowns();
+  if (page === 'dashboard') App.showView(State.currentView || 'dashboard');
+  window.scrollTo(0, 0);
+};
+
+/** Dashboard ichidagi sub-view'larni almashtiradi. */
+App.showView = function (view) {
+  App.navigate2dashboardShell();
+  State.currentView = view;
+  var views = document.querySelectorAll('.view');
+  for (var i = 0; i < views.length; i++) views[i].classList.add('hidden');
+  var el = document.getElementById('view-' + view);
+  if (el) el.classList.remove('hidden');
+
+  var items = document.querySelectorAll('.nav-item[data-view]');
+  for (var j = 0; j < items.length; j++) {
+    items[j].classList.toggle('active', items[j].getAttribute('data-view') === view);
+  }
+  App._loadView(view);
+  if (window.innerWidth <= 1024) App.closeSidebar();
+  window.scrollTo(0, 0);
+};
+
+/** Dashboard sahifa qobig'iga qaytaradi (profile/changePassword'dan). */
+App.navigate2dashboardShell = function () {
+  var pages = document.querySelectorAll('.page');
+  for (var i = 0; i < pages.length; i++) pages[i].classList.add('hidden');
+  var d = document.getElementById('page-dashboard');
+  if (d) d.classList.remove('hidden');
+};
+
+
+/** Tanlangan view uchun ma'lumotni yuklaydi (lazy loading). */
+App._loadView = function (view) {
+  switch (view) {
+    case 'dashboard': Dash.load(); break;
+    case 'applications': Apps.init(); break;
+    case 'finance': FinanceUI.load(); break;
+    case 'reports': /* foydalanuvchi tugma bossa */ break;
+    case 'rankings': RankingsUI.load(); break;
+    case 'import': ImportUI.init(); break;
+    case 'users': UsersUI.load(); break;
+    case 'logs': LogsUI.load('action'); break;
+  }
+};
+
+/* ------------------------------ MODAL -------------------------------- */
+App.openModal = function (id) { document.getElementById(id).classList.add('active'); };
+App.closeModal = function (id) { document.getElementById(id).classList.remove('active'); };
+
+App.showModal = function (title, bodyHtml, footerHtml) {
+  App._setText('genericModalTitle', title);
+  document.getElementById('genericModalBody').innerHTML = bodyHtml;
+  document.getElementById('genericModalFooter').innerHTML = footerHtml || '';
+  App.openModal('genericModal');
+};
+
+/* ------------------------------ TOAST -------------------------------- */
+App.toast = function (message, type) {
+  var c = document.getElementById('toastContainer');
+  var t = document.createElement('div');
+  t.className = 'toast ' + (type || 'info');
+  var icon = { success: 'check_circle', error: 'error', warning: 'warning', info: 'info' }[type || 'info'];
+  t.innerHTML = '<span class="material-icons">' + icon + '</span><span>' + esc(message) + '</span>';
+  c.appendChild(t);
+  setTimeout(function () {
+    t.style.opacity = '0'; t.style.transform = 'translateX(40px)';
+    setTimeout(function () { c.removeChild(t); }, 300);
+  }, 4000);
+};
+
+/* ---------------------- LOADING / PROGRESS --------------------------- */
+App.showLoading = function () { document.getElementById('loadingOverlay').style.display = 'flex'; };
+App.hideLoading = function () {
+  var el = document.getElementById('loadingOverlay');
+  el.style.opacity = '0';
+  setTimeout(function () { el.style.display = 'none'; el.style.opacity = '1'; }, 300);
+};
+App.progress = function (pct) {
+  var bar = document.getElementById('topProgress');
+  if (pct <= 0) { bar.style.width = '0'; return; }
+  bar.style.width = pct + '%';
+  if (pct >= 100) setTimeout(function () { bar.style.width = '0'; }, 400);
+};
+
+
+/* ----------------------------- MAVZU --------------------------------- */
+App._initTheme = function () {
+  var saved = localStorage.getItem('dkp_theme');
+  var dark = saved ? saved === 'dark' : (window.APP_CONFIG && window.APP_CONFIG.darkModeDefault);
+  App._applyTheme(dark ? 'dark' : 'light');
+};
+App._applyTheme = function (theme) {
+  document.documentElement.setAttribute('data-theme', theme);
+  var icon = document.querySelector('#themeToggle .material-icons');
+  if (icon) icon.textContent = theme === 'dark' ? 'light_mode' : 'dark_mode';
+};
+App.toggleTheme = function () {
+  var cur = document.documentElement.getAttribute('data-theme') || 'light';
+  var next = cur === 'dark' ? 'light' : 'dark';
+  App._applyTheme(next);
+  localStorage.setItem('dkp_theme', next);
+  if (typeof Dash !== 'undefined' && Dash.redraw) Dash.redraw();
+};
+
+/* --------------------------- SIDEBAR --------------------------------- */
+App.toggleSidebar = function () { document.getElementById('sidebar').classList.toggle('open'); };
+App.closeSidebar = function () { document.getElementById('sidebar').classList.remove('open'); };
+
+/* --------------------------- DROPDOWN -------------------------------- */
+App.toggleDropdown = function (id) {
+  var el = document.getElementById(id);
+  var willOpen = !el.classList.contains('active');
+  App._closeAllDropdowns();
+  if (willOpen) el.classList.add('active');
+};
+App._closeAllDropdowns = function () {
+  var d = document.querySelectorAll('.dropdown-menu');
+  for (var i = 0; i < d.length; i++) d[i].classList.remove('active');
+};
+App._bindGlobalClicks = function () {
+  document.addEventListener('click', function (e) {
+    if (!e.target.closest('.dropdown') && !e.target.closest('#searchResults')) {
+      App._closeAllDropdowns();
+      var sr = document.getElementById('searchResults');
+      if (sr) sr.classList.remove('active');
+    }
+  });
+  document.addEventListener('keydown', function (e) {
+    if (e.key === 'Escape') {
+      App._closeAllDropdowns();
+      App.closeModal('genericModal');
+    }
+  });
+};
+
+
+/* --------------------------- QIDIRUV --------------------------------- */
+App.onSearchInput = function (term) {
+  clearTimeout(State.searchTimer);
+  var box = document.getElementById('searchResults');
+  if (!term || term.length < 2) { box.classList.remove('active'); box.innerHTML = ''; return; }
+  State.searchTimer = setTimeout(function () {
+    api('apiSearch', State.token, term).then(function (rows) {
+      if (!rows || !rows.length) {
+        box.innerHTML = '<div class="dropdown-item">Hech narsa topilmadi</div>';
+      } else {
+        box.innerHTML = rows.map(function (r) {
+          return '<div class="dropdown-item" onclick="Apps.showDetail(\'' +
+            esc(r.rowId) + '\')"><div><strong>' +
+            esc(r.applicationNo || r.cadastreNo || r.transactionNo) +
+            '</strong><br><small>' + esc(r.customer) + ' · ' + esc(r.district) +
+            '</small></div></div>';
+        }).join('');
+        window._searchCache = rows;
+      }
+      box.classList.add('active');
+    }).catch(function (e) { App.toast(e.message, 'error'); });
+  }, 350);
+};
+
+/* ------------------------ BILDIRISHNOMALAR --------------------------- */
+App.loadNotifications = function () {
+  api('apiGetNotifications', State.token).then(function (list) {
+    var badge = document.getElementById('notifBadge');
+    var box = document.getElementById('notifList');
+    if (!list || !list.length) {
+      badge.classList.add('hidden');
+      box.innerHTML = '<div class="empty-state" style="padding:24px;">Yangi bildirishnoma yo\'q</div>';
+      return;
+    }
+    badge.textContent = list.length;
+    badge.classList.remove('hidden');
+    box.innerHTML = list.map(function (n) {
+      return '<div class="dropdown-item"><span class="material-icons status-' +
+        (n.level === 'danger' ? 'red' : n.level === 'warning' ? 'orange' : 'green') +
+        '">' + esc(n.icon) + '</span><div><strong>' + esc(n.title) +
+        '</strong><br><small>' + esc(n.message) + '</small></div></div>';
+    }).join('');
+  }).catch(function () {});
+};
+
+/* ----------------------------- LOGOUT -------------------------------- */
+App.logout = function () {
+  api('apiLogout', State.token).catch(function () {}).then(function () {
+    App.clearSession();
+    location.reload();
+  });
+};
+
+/* -------------------- MAJBURIY PAROL O'ZGARTIRISH -------------------- */
+App.submitForcePassword = function () {
+  var payload = {
+    oldPassword: document.getElementById('fpOld').value,
+    newPassword: document.getElementById('fpNew').value,
+    confirmPassword: document.getElementById('fpConfirm').value
+  };
+  api('apiChangePassword', State.token, State.csrf, payload).then(function () {
+    App.toast('Parol muvaffaqiyatli o\'zgartirildi', 'success');
+    App.closeModal('forcePasswordModal');
+    if (State.user) State.user.mustChangePassword = false;
+    App.saveSession({ token: State.token, csrf: State.csrf, user: State.user });
+  }).catch(function (e) { App.toast(e.message, 'error'); });
+};
+
+
+/* ============================ PROFILE ================================= */
+var Profile = {};
+
+Profile.loadProfile = function (user) {
+  if (!user) return;
+  App._setText('profileBigAvatar', (user.fullName || user.username || 'U').charAt(0).toUpperCase());
+  App._setText('profileFullName', user.fullName || user.username);
+  App._setText('profileUsername', '@' + user.username);
+  App._setText('pfRole', user.roleLabel || user.role);
+  App._setText('pfRegion', user.region || '—');
+  App._setText('pfDistrict', user.district || '—');
+  App._setText('pfEmployeeId', user.employeeId || '—');
+  App._setText('pfPermissions', (user.permissions || []).length + ' ta ruxsat');
+};
+
+Profile.checkStrength = function (pw) {
+  var score = 0;
+  if (pw.length >= 8) score += 34;
+  if (/[A-Za-z]/.test(pw)) score += 22;
+  if (/[0-9]/.test(pw)) score += 22;
+  if (/[^A-Za-z0-9]/.test(pw)) score += 22;
+  var bar = document.getElementById('pwStrength');
+  if (bar) {
+    bar.style.width = Math.min(100, score) + '%';
+    bar.style.background = score < 50 ? 'var(--md-danger)' :
+      score < 80 ? 'var(--md-warning)' : 'var(--md-success)';
+  }
+};
+
+Profile.submitChangePassword = function (ev) {
+  ev.preventDefault();
+  var errBox = document.getElementById('cpError');
+  errBox.classList.add('hidden');
+  var payload = {
+    oldPassword: document.getElementById('cpOld').value,
+    newPassword: document.getElementById('cpNew').value,
+    confirmPassword: document.getElementById('cpConfirm').value
+  };
+  api('apiChangePassword', State.token, State.csrf, payload).then(function () {
+    App.toast('Parol o\'zgartirildi', 'success');
+    document.getElementById('changePwForm').reset();
+    Profile.checkStrength('');
+    App.navigate('dashboard');
+  }).catch(function (e) {
+    errBox.textContent = e.message; errBox.classList.remove('hidden');
+  });
+  return false;
+};
+
+/* ============================== BOOT ================================= */
+document.addEventListener('DOMContentLoaded', function () { App.init(); });
+</script>

@@ -1,0 +1,51 @@
+<!-- navbar.html — Yuqori panel -->
+<header class="navbar">
+  <button class="btn-icon menu-toggle" onclick="App.toggleSidebar()" title="Menyu">
+    <span class="material-icons">menu</span>
+  </button>
+  <div class="brand">
+    <div class="logo">DKP</div>
+    <span id="navBrandText">Arizalar Nazorati</span>
+  </div>
+
+  <div class="spacer"></div>
+
+  <!-- Tezkor qidiruv -->
+  <div style="position:relative; max-width:360px; flex:1;" class="no-print">
+    <input type="text" class="input" id="globalSearch" placeholder="Qidirish: kadastr, mijoz, JSHSHIR..."
+      style="padding-left:40px;" oninput="App.onSearchInput(this.value)" autocomplete="off">
+    <span class="material-icons" style="position:absolute; left:12px; top:11px; color:var(--text-disabled)">search</span>
+    <div id="searchResults" class="dropdown-menu" style="left:0; right:0; max-height:360px; overflow-y:auto;"></div>
+  </div>
+
+  <!-- Mavzu almashtirish -->
+  <button class="btn-icon" id="themeToggle" onclick="App.toggleTheme()" title="Mavzu">
+    <span class="material-icons">dark_mode</span>
+  </button>
+
+  <!-- Bildirishnomalar -->
+  <div class="dropdown no-print">
+    <button class="btn-icon" id="notifBtn" onclick="App.toggleDropdown('notifMenu')" title="Bildirishnomalar" style="position:relative;">
+      <span class="material-icons">notifications</span>
+      <span class="notif-badge hidden" id="notifBadge">0</span>
+    </button>
+    <div class="dropdown-menu" id="notifMenu" style="min-width:320px; max-height:420px; overflow-y:auto;">
+      <div class="dropdown-header"><strong>Bildirishnomalar</strong></div>
+      <div id="notifList"><div class="empty-state" style="padding:24px;">Yangi bildirishnoma yo'q</div></div>
+    </div>
+  </div>
+
+  <!-- Profil menyu -->
+  <div class="dropdown no-print">
+    <div class="avatar" id="userAvatar" onclick="App.toggleDropdown('profileMenu')">U</div>
+    <div class="dropdown-menu" id="profileMenu">
+      <div class="dropdown-header">
+        <div style="font-weight:600;" id="profileName">Foydalanuvchi</div>
+        <div style="font-size:12px; color:var(--text-secondary);" id="profileRole">—</div>
+      </div>
+      <div class="dropdown-item" onclick="App.navigate('profile')"><span class="material-icons">person</span>Profil</div>
+      <div class="dropdown-item" onclick="App.navigate('changePassword')"><span class="material-icons">lock</span>Parolni o'zgartirish</div>
+      <div class="dropdown-item" onclick="App.logout()" style="color:var(--md-danger)"><span class="material-icons">logout</span>Chiqish</div>
+    </div>
+  </div>
+</header>

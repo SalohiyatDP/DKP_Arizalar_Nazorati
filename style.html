@@ -1,0 +1,257 @@
+<!-- ==========================================================================
+     style.html — Komponentlar uslubi (Material Design 3, responsiv)
+     ========================================================================== -->
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { height: 100%; }
+  body {
+    font-family: var(--font-family);
+    background: var(--bg-body);
+    color: var(--text-primary);
+    font-size: 14px;
+    line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+  }
+  a { color: var(--md-primary); text-decoration: none; }
+  ::-webkit-scrollbar { width: 10px; height: 10px; }
+  ::-webkit-scrollbar-thumb { background: var(--border-color); border-radius: 8px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+
+  /* ----------------------------- LOADING -------------------------------- */
+  #loadingOverlay {
+    position: fixed; inset: 0; background: var(--bg-body);
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    z-index: 9999; transition: opacity var(--transition);
+  }
+  .spinner {
+    width: 48px; height: 48px; border: 4px solid var(--md-primary-light);
+    border-top-color: var(--md-primary); border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .loading-text { margin-top: 16px; color: var(--text-secondary); font-weight: 500; }
+
+  /* Progress bar (yuqorida) */
+  #topProgress {
+    position: fixed; top: 0; left: 0; height: 3px; width: 0;
+    background: var(--md-primary); z-index: 10000; transition: width 0.3s ease;
+  }
+
+  /* ----------------------------- LAYOUT --------------------------------- */
+  .app-shell { display: none; min-height: 100vh; }
+  .app-shell.active { display: block; }
+
+  .navbar {
+    position: fixed; top: 0; left: 0; right: 0; height: var(--navbar-height);
+    background: var(--bg-surface); border-bottom: 1px solid var(--divider);
+    display: flex; align-items: center; padding: 0 16px; gap: 12px;
+    z-index: 100; box-shadow: var(--shadow-1);
+  }
+  .navbar .brand { display: flex; align-items: center; gap: 10px; font-weight: 600; font-size: 16px; }
+  .navbar .brand .logo {
+    width: 36px; height: 36px; border-radius: 10px;
+    background: linear-gradient(135deg, var(--md-primary), var(--md-primary-dark));
+    color: #fff; display: flex; align-items: center; justify-content: center; font-weight: 700;
+  }
+  .navbar .spacer { flex: 1; }
+
+  .sidebar {
+    position: fixed; top: var(--navbar-height); left: 0; bottom: 0;
+    width: var(--sidebar-width); background: var(--bg-surface);
+    border-right: 1px solid var(--divider); overflow-y: auto; padding: 12px 8px;
+    z-index: 90; transition: transform var(--transition);
+  }
+  .sidebar .nav-section { margin: 8px 0; }
+  .sidebar .nav-label {
+    font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px;
+    color: var(--text-disabled); padding: 8px 16px; font-weight: 600;
+  }
+  .nav-item {
+    display: flex; align-items: center; gap: 14px; padding: 11px 16px;
+    border-radius: var(--radius-pill); color: var(--text-secondary);
+    cursor: pointer; font-weight: 500; transition: var(--transition); user-select: none;
+  }
+  .nav-item:hover { background: var(--bg-hover); color: var(--text-primary); }
+  .nav-item.active { background: var(--md-primary-light); color: var(--md-primary-dark); }
+  [data-theme="dark"] .nav-item.active { color: var(--md-primary); }
+  .nav-item .material-icons { font-size: 20px; }
+
+  .main-content {
+    margin-left: var(--sidebar-width); margin-top: var(--navbar-height);
+    padding: 24px; min-height: calc(100vh - var(--navbar-height));
+  }
+  .page-title { font-size: 24px; font-weight: 600; margin-bottom: 4px; }
+  .page-subtitle { color: var(--text-secondary); margin-bottom: 20px; }
+
+  .footer {
+    margin-left: var(--sidebar-width); padding: 16px 24px;
+    color: var(--text-disabled); font-size: 12px; text-align: center;
+    border-top: 1px solid var(--divider);
+  }
+
+  /* ----------------------------- KARTALAR ------------------------------- */
+  .card {
+    background: var(--bg-surface); border-radius: var(--radius-md);
+    box-shadow: var(--shadow-1); padding: 20px; border: 1px solid var(--divider);
+  }
+  .card-title { font-size: 15px; font-weight: 600; margin-bottom: 14px; display: flex; align-items: center; gap: 8px; }
+
+  .grid { display: grid; gap: 16px; }
+  .kpi-grid { grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); }
+  .charts-grid { grid-template-columns: repeat(auto-fill, minmax(360px, 1fr)); margin-top: 16px; }
+
+  .kpi {
+    background: var(--bg-surface); border-radius: var(--radius-md); padding: 18px;
+    box-shadow: var(--shadow-1); border: 1px solid var(--divider);
+    display: flex; align-items: center; gap: 16px; transition: var(--transition);
+  }
+  .kpi:hover { box-shadow: var(--shadow-2); transform: translateY(-2px); }
+  .kpi .icon {
+    width: 48px; height: 48px; border-radius: var(--radius-sm);
+    display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+  }
+  .kpi .icon .material-icons { font-size: 26px; color: #fff; }
+  .kpi .value { font-size: 26px; font-weight: 700; line-height: 1.1; }
+  .kpi .label { color: var(--text-secondary); font-size: 13px; margin-top: 2px; }
+
+  /* ----------------------------- TUGMALAR ------------------------------- */
+  .btn {
+    display: inline-flex; align-items: center; gap: 8px; padding: 10px 18px;
+    border: none; border-radius: var(--radius-pill); font-family: inherit;
+    font-size: 14px; font-weight: 500; cursor: pointer; transition: var(--transition);
+    background: var(--bg-surface-2); color: var(--text-primary);
+  }
+  .btn:hover { background: var(--bg-hover); }
+  .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+  .btn-primary { background: var(--md-primary); color: var(--text-on-primary); }
+  .btn-primary:hover { background: var(--md-primary-dark); }
+  .btn-danger { background: var(--md-danger); color: #fff; }
+  .btn-ghost { background: transparent; }
+  .btn-icon { padding: 10px; border-radius: 50%; background: transparent; }
+  .btn-icon:hover { background: var(--bg-hover); }
+  .btn .material-icons { font-size: 18px; }
+  .btn-block { width: 100%; justify-content: center; }
+
+  /* ----------------------------- FORMALAR ------------------------------- */
+  .field { margin-bottom: 16px; }
+  .field label { display: block; font-size: 13px; font-weight: 500; margin-bottom: 6px; color: var(--text-secondary); }
+  .input, .select {
+    width: 100%; padding: 11px 14px; border: 1px solid var(--border-color);
+    border-radius: var(--radius-sm); background: var(--bg-surface);
+    color: var(--text-primary); font-family: inherit; font-size: 14px; transition: var(--transition);
+  }
+  .input:focus, .select:focus { outline: none; border-color: var(--md-primary); box-shadow: 0 0 0 3px var(--md-primary-light); }
+  .filters-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 12px; }
+
+  /* ----------------------------- JADVAL --------------------------------- */
+  .table-wrap { overflow-x: auto; border-radius: var(--radius-md); border: 1px solid var(--divider); }
+  table.data-table { width: 100%; border-collapse: collapse; background: var(--bg-surface); }
+  .data-table th, .data-table td { padding: 11px 14px; text-align: left; white-space: nowrap; border-bottom: 1px solid var(--divider); font-size: 13px; }
+  .data-table th { background: var(--bg-surface-2); font-weight: 600; position: sticky; top: 0; cursor: pointer; user-select: none; }
+  .data-table tbody tr:hover { background: var(--bg-hover); }
+
+  .badge { display: inline-block; padding: 3px 10px; border-radius: var(--radius-pill); font-size: 11px; font-weight: 600; color: #fff; }
+  .dot { display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-right: 6px; vertical-align: middle; }
+
+  .pagination { display: flex; align-items: center; gap: 8px; justify-content: flex-end; margin-top: 14px; flex-wrap: wrap; }
+
+  /* ----------------------------- MODAL ---------------------------------- */
+  .modal-overlay {
+    position: fixed; inset: 0; background: var(--bg-overlay); display: none;
+    align-items: center; justify-content: center; z-index: 1000; padding: 16px;
+  }
+  .modal-overlay.active { display: flex; }
+  .modal {
+    background: var(--bg-elevated); border-radius: var(--radius-lg); box-shadow: var(--shadow-3);
+    width: 100%; max-width: 520px; max-height: 90vh; overflow-y: auto; animation: modalIn 0.2s ease;
+  }
+  .modal.wide { max-width: 860px; }
+  @keyframes modalIn { from { transform: translateY(20px); opacity: 0; } to { transform: none; opacity: 1; } }
+  .modal-header { padding: 20px 24px; border-bottom: 1px solid var(--divider); display: flex; align-items: center; justify-content: space-between; }
+  .modal-header h3 { font-size: 18px; }
+  .modal-body { padding: 24px; }
+  .modal-footer { padding: 16px 24px; border-top: 1px solid var(--divider); display: flex; gap: 10px; justify-content: flex-end; }
+
+  /* ----------------------------- TOAST ---------------------------------- */
+  #toastContainer { position: fixed; bottom: 24px; right: 24px; z-index: 2000; display: flex; flex-direction: column; gap: 10px; }
+  .toast {
+    background: var(--bg-elevated); color: var(--text-primary); padding: 14px 18px;
+    border-radius: var(--radius-sm); box-shadow: var(--shadow-3); display: flex; align-items: center; gap: 12px;
+    min-width: 280px; border-left: 4px solid var(--md-primary); animation: toastIn 0.25s ease;
+  }
+  @keyframes toastIn { from { transform: translateX(40px); opacity: 0; } to { transform: none; opacity: 1; } }
+  .toast.success { border-left-color: var(--md-success); }
+  .toast.error { border-left-color: var(--md-danger); }
+  .toast.warning { border-left-color: var(--md-warning); }
+
+  /* --------------------------- LOGIN SAHIFA ----------------------------- */
+  .login-wrap { min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 16px;
+    background: linear-gradient(135deg, var(--md-primary) 0%, var(--md-primary-dark) 100%); }
+  .login-card { background: var(--bg-surface); border-radius: var(--radius-lg); box-shadow: var(--shadow-3);
+    width: 100%; max-width: 400px; padding: 36px 32px; }
+  .login-logo { width: 64px; height: 64px; border-radius: 18px; margin: 0 auto 16px;
+    background: linear-gradient(135deg, var(--md-primary), var(--md-primary-dark)); color: #fff;
+    display: flex; align-items: center; justify-content: center; font-size: 28px; font-weight: 700; }
+  .login-card h1 { text-align: center; font-size: 22px; margin-bottom: 4px; }
+  .login-card .sub { text-align: center; color: var(--text-secondary); margin-bottom: 24px; font-size: 13px; }
+
+  .checkbox-row { display: flex; align-items: center; gap: 8px; margin-bottom: 16px; }
+  .checkbox-row input { width: 16px; height: 16px; accent-color: var(--md-primary); }
+
+  /* --------------------------- AVATAR/MENU ------------------------------ */
+  .avatar { width: 36px; height: 36px; border-radius: 50%; background: var(--md-primary);
+    color: #fff; display: flex; align-items: center; justify-content: center; font-weight: 600; cursor: pointer; }
+  .dropdown { position: relative; }
+  .dropdown-menu { position: absolute; right: 0; top: 48px; background: var(--bg-elevated);
+    border-radius: var(--radius-md); box-shadow: var(--shadow-3); min-width: 220px; display: none; overflow: hidden; z-index: 200; }
+  .dropdown-menu.active { display: block; }
+  .dropdown-item { padding: 12px 16px; display: flex; align-items: center; gap: 12px; cursor: pointer; transition: var(--transition); }
+  .dropdown-item:hover { background: var(--bg-hover); }
+  .dropdown-header { padding: 16px; border-bottom: 1px solid var(--divider); }
+
+  .notif-badge { position: absolute; top: 4px; right: 4px; background: var(--md-danger);
+    color: #fff; font-size: 10px; min-width: 16px; height: 16px; border-radius: 8px;
+    display: flex; align-items: center; justify-content: center; padding: 0 4px; }
+
+  .chart-canvas { width: 100% !important; height: 260px !important; }
+  .progress-bar { height: 6px; background: var(--bg-surface-2); border-radius: 3px; overflow: hidden; }
+  .progress-fill { height: 100%; background: var(--md-primary); }
+
+  .empty-state { text-align: center; padding: 48px 16px; color: var(--text-disabled); }
+  .empty-state .material-icons { font-size: 48px; opacity: 0.5; }
+
+  .hidden { display: none !important; }
+  .text-right { text-align: right; }
+  .text-center { text-align: center; }
+  .mt-16 { margin-top: 16px; } .mb-16 { margin-bottom: 16px; }
+  .flex { display: flex; } .flex-between { display: flex; align-items: center; justify-content: space-between; }
+  .gap-8 { gap: 8px; } .gap-12 { gap: 12px; } .wrap { flex-wrap: wrap; }
+
+  /* --------------------------- RESPONSIVE ------------------------------- */
+  .menu-toggle { display: none; }
+  @media (max-width: 1024px) {
+    .menu-toggle { display: inline-flex; }
+    .sidebar { transform: translateX(-100%); box-shadow: var(--shadow-3); }
+    .sidebar.open { transform: none; }
+    .main-content, .footer { margin-left: 0; }
+  }
+  @media (max-width: 600px) {
+    .main-content { padding: 16px; }
+    .kpi-grid { grid-template-columns: 1fr 1fr; }
+    .kpi { flex-direction: column; text-align: center; gap: 8px; padding: 14px; }
+    .kpi .value { font-size: 20px; }
+    #toastContainer { left: 16px; right: 16px; }
+    .toast { min-width: auto; }
+  }
+
+  /* --------------------------- CHOP ETISH ------------------------------- */
+  @media print {
+    .navbar, .sidebar, .footer, #toastContainer, .no-print { display: none !important; }
+    .main-content { margin: 0; padding: 0; }
+    .print-table { width: 100%; border-collapse: collapse; font-size: 11px; }
+    .print-table th, .print-table td { border: 1px solid #999; padding: 4px 6px; }
+  }
+  .print-table { width: 100%; border-collapse: collapse; }
+  .print-table th, .print-table td { border: 1px solid var(--divider); padding: 6px 8px; font-size: 12px; }
+  .print-table th { background: var(--bg-surface-2); }
+</style>
