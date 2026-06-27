@@ -15,15 +15,28 @@ var State = {
 function api(method) {
   var args = Array.prototype.slice.call(arguments, 1);
   return new Promise(function (resolve, reject) {
-    google.script.run
+    if (!window.google || !google.script || !google.script.run) {
+      reject(new Error('google.script.run mavjud emas (ilova noto\'g\'ri muhitda ochilgan).'));
+      return;
+    }
+    var runner = google.script.run
       .withSuccessHandler(function (res) {
         if (res && res.ok) return resolve(res.data);
         var err = (res && res.error) || 'Noma\'lum xato';
         if (res && res.code === 'AUTH') App.handleAuthExpired();
         reject(new Error(err));
       })
-      .withFailureHandler(function (e) { reject(e); })
-      [method].apply(google.script.run, args);
+      .withFailureHandler(function (e) {
+        reject(new Error((e && e.message) ? e.message : String(e)));
+      });
+    if (typeof runner[method] !== 'function') {
+      reject(new Error('Server funksiyasi topilmadi: "' + method +
+        '". Ehtimol Code.gs yangilanmagan.'));
+      return;
+    }
+    // MUHIM: metod runner obyektida (this=runner) chaqirilishi shart,
+    // aks holda success/failure handlerlar ishlamaydi.
+    runner[method].apply(runner, args);
   });
 }
 
