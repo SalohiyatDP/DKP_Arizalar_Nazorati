@@ -165,7 +165,22 @@ var Utils = (function () {
    */
   function toNumber(v) {
     if (typeof v === 'number') return isNaN(v) ? 0 : v;
-    var s = str(v).replace(/\s+/g, '').replace(/,/g, '.').replace(/[^\d.\-]/g, '');
+    var s = str(v);
+    if (!s) return 0;
+    // FAQAT raqam, bo'shliq, vergul, nuqta va boshidagi minusdan iborat qiymatni
+    // songa aylantiramiz. Aks holda 0 — sana ("2026-04-17 19:01"), davomiylik
+    // ("20 kun 19 soat"), hash yoki matnli qiymatlar XATO summaga aylanmasligi uchun.
+    if (!/^-?[\d\s.,]+$/.test(s)) return 0;
+    s = s.replace(/\s+/g, '');
+    if (s.indexOf(',') !== -1 && s.indexOf('.') === -1) {
+      var parts = s.split(',');
+      // bitta vergul va 1-2 raqamli qism — o'nlik kasr; aks holda minglik ajratgich
+      if (parts.length === 2 && parts[1].length <= 2) s = parts[0] + '.' + parts[1];
+      else s = s.replace(/,/g, '');
+    } else {
+      s = s.replace(/,/g, '');
+    }
+    if ((s.match(/\./g) || []).length > 1) return 0; // bir nechta nuqta — yaroqsiz
     var n = parseFloat(s);
     return isNaN(n) ? 0 : n;
   }

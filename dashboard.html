@@ -101,6 +101,7 @@
   <div class="card">
     <div class="flex-between mb-16"><span id="finCount" style="color:var(--text-secondary)">—</span></div>
     <div class="table-wrap"><table class="data-table" id="financeRegionTable"></table></div>
+    <div id="financeRegionTable_ctrl" class="no-print"></div>
   </div>
 </section>
 
@@ -142,6 +143,7 @@
     <div class="flex-between mb-16"><h3 id="reportTitle">—</h3>
       <button class="btn no-print" onclick="window.print()"><span class="material-icons">print</span> Chop etish</button></div>
     <div class="table-wrap"><table class="data-table" id="reportTable"></table></div>
+    <div id="reportTable_ctrl" class="no-print"></div>
   </div>
 </section>
 
@@ -151,9 +153,11 @@
   <div class="page-subtitle mb-16">Muhandis va tuman samaradorligi</div>
   <div class="grid charts-grid">
     <div class="card"><div class="card-title"><span class="material-icons">engineering</span> Muhandislar</div>
-      <div class="table-wrap"><table class="data-table" id="rankEngineers"></table></div></div>
+      <div class="table-wrap"><table class="data-table" id="rankEngineers"></table></div>
+      <div id="rankEngineers_ctrl" class="no-print"></div></div>
     <div class="card"><div class="card-title"><span class="material-icons">location_city</span> Tumanlar</div>
-      <div class="table-wrap"><table class="data-table" id="rankDistricts"></table></div></div>
+      <div class="table-wrap"><table class="data-table" id="rankDistricts"></table></div>
+      <div id="rankDistricts_ctrl" class="no-print"></div></div>
   </div>
 </section>
 
@@ -201,7 +205,8 @@
       <div class="page-subtitle">Hisoblarni boshqarish</div></div>
     <button class="btn btn-primary" onclick="UsersUI.openCreate()"><span class="material-icons">person_add</span> Yangi</button>
   </div>
-  <div class="card"><div class="table-wrap"><table class="data-table" id="usersTable"></table></div></div>
+  <div class="card"><div class="table-wrap"><table class="data-table" id="usersTable"></table></div>
+    <div id="usersTable_ctrl"></div></div>
 </section>
 
 <!-- ============================= AUDIT LOGLAR ========================== -->
@@ -216,7 +221,8 @@
       <button class="btn" onclick="LogsUI.load('export')">Eksportlar</button>
     </div>
   </div>
-  <div class="card"><div class="table-wrap"><table class="data-table" id="logsTable"></table></div></div>
+  <div class="card"><div class="table-wrap"><table class="data-table" id="logsTable"></table></div>
+    <div id="logsTable_ctrl"></div></div>
 </section>
 
 

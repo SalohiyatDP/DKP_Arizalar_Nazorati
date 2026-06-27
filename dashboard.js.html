@@ -21,6 +21,89 @@ function chartTheme() {
   };
 }
 
+/* ===================== GRID (universal jadval) =====================
+ * Har qanday jadval uchun: 50 qatorli sahifalash + Excelga eksport.
+ * columns: [{label, html?}]; rows: [[cell, ...], ...] (cell HTML bo'lishi mumkin)
+ */
+var Grid = { _state: {}, PAGE_SIZE: 50 };
+
+Grid.render = function (tableId, columns, rows, opts) {
+  opts = opts || {};
+  rows = rows || [];
+  var st = Grid._state[tableId] || { page: 1 };
+  Grid._state[tableId] = st;
+  st.columns = columns; st.rows = rows;
+  st.pageSize = opts.pageSize || Grid.PAGE_SIZE;
+  st.exportName = opts.exportName || tableId;
+  var total = rows.length;
+  var pages = Math.max(1, Math.ceil(total / st.pageSize));
+  if (st.page > pages) st.page = pages;
+  if (st.page < 1) st.page = 1;
+  var start = (st.page - 1) * st.pageSize;
+  var pageRows = rows.slice(start, start + st.pageSize);
+
+  var thead = '<thead><tr>' + columns.map(function (c) {
+    return '<th>' + esc(c.label != null ? c.label : c) + '</th>';
+  }).join('') + '</tr></thead>';
+  var tbody = '<tbody>' + (pageRows.length ? pageRows.map(function (r) {
+    return '<tr>' + r.map(function (cell, ci) {
+      var col = columns[ci] || {};
+      return '<td>' + (col.html ? (cell == null ? '' : cell) : esc(cell)) + '</td>';
+    }).join('') + '</tr>';
+  }).join('') : '<tr><td colspan="' + columns.length +
+    '"><div class="empty-state" style="padding:24px">Ma\'lumot yo\'q</div></td></tr>') + '</tbody>';
+  var t = document.getElementById(tableId);
+  if (t) t.innerHTML = thead + tbody;
+
+  var ctrl = document.getElementById(tableId + '_ctrl');
+  if (ctrl) {
+    ctrl.innerHTML = '<div class="grid-bar">' +
+      '<span style="color:var(--text-secondary);font-size:13px">Jami: ' + total +
+      ' · sahifa ' + st.page + '/' + pages + '</span>' +
+      '<div class="flex gap-8">' +
+      '<button class="btn" ' + (st.page <= 1 ? 'disabled' : '') +
+      ' onclick="Grid.go(\'' + tableId + '\',' + (st.page - 1) + ')"><span class="material-icons">chevron_left</span></button>' +
+      '<button class="btn" ' + (st.page >= pages ? 'disabled' : '') +
+      ' onclick="Grid.go(\'' + tableId + '\',' + (st.page + 1) + ')"><span class="material-icons">chevron_right</span></button>' +
+      '<button class="btn btn-primary" onclick="Grid.exportExcel(\'' + tableId + '\')">' +
+      '<span class="material-icons">grid_on</span> Excel</button>' +
+      '</div></div>';
+  }
+};
+
+Grid.go = function (tableId, page) {
+  var st = Grid._state[tableId]; if (!st) return;
+  st.page = page;
+  Grid.render(tableId, st.columns, st.rows, { pageSize: st.pageSize, exportName: st.exportName });
+};
+
+Grid.exportExcel = function (tableId) {
+  var st = Grid._state[tableId]; if (!st) return;
+  function strip(s) { return String(s == null ? '' : s).replace(/<[^>]*>/g, '').replace(/&nbsp;/g, ' ').replace(/&amp;/g, '&').trim(); }
+  var headers = st.columns.map(function (c) { return c.label != null ? c.label : c; });
+  var aoa = [headers].concat(st.rows.map(function (r) { return r.map(strip); }));
+  var name = (st.exportName || 'export') + '_' +
+    (new Date()).toISOString().slice(0, 19).replace(/[:T]/g, '');
+  if (typeof XLSX !== 'undefined') {
+    var ws = XLSX.utils.aoa_to_sheet(aoa);
+    var wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, 'Hisobot');
+    XLSX.writeFile(wb, name + '.xlsx');
+  } else {
+    var csv = aoa.map(function (row) {
+      return row.map(function (c) {
+        var s = String(c); return /[",\r\n;]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s;
+      }).join(',');
+    }).join('\r\n');
+    var blob = new Blob(['\uFEFF' + csv], { type: 'text/csv' });
+    var url = URL.createObjectURL(blob);
+    var a = document.createElement('a'); a.href = url; a.download = name + '.csv';
+    document.body.appendChild(a); a.click(); document.body.removeChild(a);
+    setTimeout(function () { URL.revokeObjectURL(url); }, 1000);
+  }
+};
+
+
 /* ============================== DASH ================================= */
 var Dash = {};
 Dash._data = null;
@@ -169,6 +252,7 @@ Apps._renderFilters = function (o) {
   Apps._opts = o;
   function opt(v, l, sel) { return '<option value="' + esc(v) + '"' + (sel ? ' selected' : '') + '>' + esc(l) + '</option>'; }
   function selBox(id, label, items, valKey, labKey, onchange) {
+    items = items || [];
     var opts = '<option value="">' + label + ' (barchasi)</option>';
     items.forEach(function (it) {
       var v = valKey ? it[valKey] : it;
@@ -227,7 +311,7 @@ Apps.resetFilters = function () {
 Apps.query = function () {
   var filters = Apps._collectFilters();
   filters.page = Apps._page;
-  filters.pageSize = 25;
+  filters.pageSize = 50;
   Apps._filters = filters;
   App.progress(30);
   api('apiQueryTable', State.token, filters).then(function (res) {
@@ -245,11 +329,11 @@ Apps._render = function (res) {
     document.getElementById('appsPagination').innerHTML = '';
     return;
   }
-  t.querySelector('thead').innerHTML = '<tr><th>Tranzaksiya</th><th>Mijoz</th><th>Muhandis</th>' +
+  t.querySelector('thead').innerHTML = '<tr><th>Tranzaksiya</th><th>Muhandis</th>' +
     '<th>Tuman</th><th>Tur</th><th>Muddat</th><th>Holat</th><th>Summa</th><th>To\'lov</th><th></th></tr>';
   t.querySelector('tbody').innerHTML = res.rows.map(function (r) {
     return '<tr><td><strong>' + esc(r.transactionNo || r.applicationNo || r.cadastreNo) + '</strong></td>' +
-      '<td>' + esc(r.customer) + '</td><td>' + esc(r.engineer) + '</td><td>' + esc(r.district) + '</td>' +
+      '<td>' + esc(r.engineer) + '</td><td>' + esc(r.district) + '</td>' +
       '<td>' + esc(r.residencyLabel) + '</td><td>' + esc(r.deadlineDate) + '</td>' +
       '<td><span class="badge" style="background:' + r.colorHex + '">' + esc(r.deadlineStatusLabel) + '</span></td>' +
       '<td>' + esc(r.amountFmt) + '</td>' +
@@ -401,15 +485,12 @@ FinanceUI.render = function () {
 };
 
 FinanceUI._renderTable = function (list, label) {
-  var t = document.getElementById('financeRegionTable');
-  if (!list || !list.length) { t.innerHTML = '<tbody><tr><td>Ma\'lumot yo\'q</td></tr></tbody>'; return; }
-  t.innerHTML = '<thead><tr><th>' + esc(label) + '</th><th>Arizalar</th><th>To\'langan summa</th>' +
-    '<th>To\'lov kutilmoqda</th></tr></thead><tbody>' +
-    list.map(function (g) {
-      return '<tr><td>' + esc(g.name) + '</td><td>' + g.count + '</td><td>' +
-        Number(g.paid).toLocaleString('ru-RU') + '</td><td>' +
-        Number(g.debt).toLocaleString('ru-RU') + '</td></tr>';
-    }).join('') + '</tbody>';
+  var columns = [{ label: label }, { label: 'Arizalar' },
+    { label: 'To\'langan summa' }, { label: 'To\'lov kutilmoqda' }];
+  var rows = (list || []).map(function (g) {
+    return [g.name, g.count, Number(g.paid).toLocaleString('ru-RU'), Number(g.debt).toLocaleString('ru-RU')];
+  });
+  Grid.render('financeRegionTable', columns, rows, { exportName: 'moliya' });
 };
 
 FinanceUI.exportExcel = function () {
@@ -431,15 +512,12 @@ RankingsUI.load = function () {
   }).catch(function (e) { App.toast(e.message, 'error'); });
 };
 RankingsUI._table = function (id, list, label) {
-  var t = document.getElementById(id);
-  if (!list || !list.length) { t.innerHTML = '<tbody><tr><td>Ma\'lumot yo\'q</td></tr></tbody>'; return; }
-  t.innerHTML = '<thead><tr><th>#</th><th>' + label + '</th><th>Yakunlangan</th>' +
-    '<th>To\'lovga chiqarilgan</th><th>To\'langan summa</th></tr></thead><tbody>' +
-    list.map(function (e) {
-      return '<tr><td>' + e.rank + '</td><td>' + esc(e.name) + '</td><td><strong>' + e.completed +
-        '</strong></td><td>' + (e.issued || 0) + '</td><td>' +
-        Number(e.paid || 0).toLocaleString('ru-RU') + '</td></tr>';
-    }).join('') + '</tbody>';
+  var columns = [{ label: '#' }, { label: label }, { label: 'Yakunlangan' },
+    { label: 'To\'lovga chiqarilgan' }, { label: 'To\'langan summa' }];
+  var rows = (list || []).map(function (e) {
+    return [e.rank, e.name, e.completed, (e.issued || 0), Number(e.paid || 0).toLocaleString('ru-RU')];
+  });
+  Grid.render(id, columns, rows, { exportName: id });
 };
 
 
@@ -485,12 +563,8 @@ ReportsUI.load = function () {
   api('apiGetReport', State.token, type, filters).then(function (rep) {
     App.progress(100);
     App._setText('reportTitle', rep.title + ' (' + rep.total + ')');
-    var t = document.getElementById('reportTable');
-    var head = '<thead><tr>' + rep.columns.map(function (c) { return '<th>' + esc(c) + '</th>'; }).join('') + '</tr></thead>';
-    var body = '<tbody>' + (rep.rows.length ? rep.rows.map(function (row) {
-      return '<tr>' + row.map(function (c) { return '<td>' + esc(c) + '</td>'; }).join('') + '</tr>';
-    }).join('') : '<tr><td colspan="' + rep.columns.length + '"><div class="empty-state">Ma\'lumot yo\'q</div></td></tr>') + '</tbody>';
-    t.innerHTML = head + body;
+    Grid.render('reportTable', rep.columns.map(function (c) { return { label: c }; }),
+      rep.rows, { exportName: 'hisobot_' + type });
   }).catch(function (e) { App.toast(e.message, 'error'); App.progress(0); });
 };
 
@@ -636,23 +710,20 @@ ImportUI._renderReport = function (rep) {
 var UsersUI = {};
 UsersUI.load = function () {
   api('apiListUsers', State.token).then(function (list) {
-    var t = document.getElementById('usersTable');
-    t.innerHTML = '<thead><tr><th>Login</th><th>Parol</th><th>F.I.O.</th><th>Rol</th><th>Tuman</th>' +
-      '<th>Holat</th><th>Oxirgi kirish</th><th>Amallar</th></tr></thead><tbody>' +
-      list.map(function (u) {
-        return '<tr><td><strong>' + esc(u.username) + '</strong></td>' +
-          '<td><code>' + esc(u.password || '—') + '</code></td>' +
-          '<td>' + esc(u.fullName || '—') + '</td>' +
-          '<td>' + esc(u.roleLabel) + '</td>' +
-          '<td>' + esc(u.district || '—') + '</td>' +
-          '<td><span class="badge" style="background:' +
-          (/(active|faol)/i.test(u.status) ? 'var(--md-success)' : 'var(--md-danger)') + '">' +
-          esc(u.status || 'active') + '</span></td><td>' + esc(u.lastLogin || '—') + '</td>' +
-          '<td><button class="btn-icon" title="Parol berish/o\'zgartirish" onclick="UsersUI.setPassword(\'' + esc(u.username) +
-          '\')"><span class="material-icons">key</span></button>' +
-          '<button class="btn-icon" title="Tasodifiy parol tiklash" onclick="UsersUI.reset(\'' + esc(u.username) +
-          '\')"><span class="material-icons">lock_reset</span></button></td></tr>';
-      }).join('') + '</tbody>';
+    var columns = [{ label: 'Login' }, { label: 'Parol' }, { label: 'F.I.O.' }, { label: 'Rol' },
+      { label: 'Tuman' }, { label: 'Holat', html: true }, { label: 'Oxirgi kirish' }, { label: 'Amallar', html: true }];
+    var rows = (list || []).map(function (u) {
+      var badge = '<span class="badge" style="background:' +
+        (/(active|faol)/i.test(u.status) ? 'var(--md-success)' : 'var(--md-danger)') + '">' +
+        esc(u.status || 'active') + '</span>';
+      var actions = '<button class="btn-icon" title="Parol berish/o\'zgartirish" onclick="UsersUI.setPassword(\'' +
+        esc(u.username) + '\')"><span class="material-icons">key</span></button>' +
+        '<button class="btn-icon" title="Tasodifiy parol tiklash" onclick="UsersUI.reset(\'' +
+        esc(u.username) + '\')"><span class="material-icons" style="color:var(--md-danger)">lock_reset</span></button>';
+      return [u.username, u.password || '—', u.fullName || '—', u.roleLabel,
+        u.district || '—', badge, u.lastLogin || '—', actions];
+    });
+    Grid.render('usersTable', columns, rows, { exportName: 'foydalanuvchilar' });
   }).catch(function (e) { App.toast(e.message, 'error'); });
 };
 
@@ -757,17 +828,15 @@ UsersUI.reset = function (username) {
 /* ============================ AUDIT LOGLAR ========================== */
 var LogsUI = {};
 LogsUI.load = function (type) {
-  api('apiGetLogs', State.token, type, 150).then(function (rows) {
-    var t = document.getElementById('logsTable');
+  api('apiGetLogs', State.token, type, 500).then(function (rows) {
     if (!rows || !rows.length) {
-      t.innerHTML = '<tbody><tr><td><div class="empty-state">Log yozuvlari yo\'q</div></td></tr></tbody>';
+      Grid.render('logsTable', [{ label: 'Ma\'lumot' }], [], { exportName: 'log_' + type });
       return;
     }
     var cols = Object.keys(rows[0]).filter(function (k) { return k !== '_row'; });
-    t.innerHTML = '<thead><tr>' + cols.map(function (c) { return '<th>' + esc(c) + '</th>'; }).join('') +
-      '</tr></thead><tbody>' + rows.map(function (r) {
-        return '<tr>' + cols.map(function (c) { return '<td>' + esc(r[c]) + '</td>'; }).join('') + '</tr>';
-      }).join('') + '</tbody>';
+    var columns = cols.map(function (c) { return { label: c }; });
+    var data = rows.map(function (r) { return cols.map(function (c) { return r[c]; }); });
+    Grid.render('logsTable', columns, data, { exportName: 'log_' + type });
   }).catch(function (e) { App.toast(e.message, 'error'); });
 };
 

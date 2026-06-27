@@ -80,9 +80,10 @@ var HISOBOT_FIELDS = {
   paidReg:          ['Registratsiya to\'langan summasi'],
   paidAddr:         ['Manzil to\'langan summasi'],
 
-  // Umumiy zaxira maydonlari (agar yuqoridagilar topilmasa).
-  amount:           ['Jami to\'lov summasi', 'TO\'LOV SUMMASI', 'SUMMA', 'AMOUNT'],
-  paidAmount:       ['Jami to\'langan summa', 'TO\'LANGAN SUMMA', 'PAID AMOUNT']
+  // Umumiy zaxira maydonlari (faqat ANIQ "Jami" sarlavhalari — qisman moslik yo'q,
+  // chunki 'SUMMA'/'AMOUNT' boshqa ustunlarni xato ushlab, ulkan summa berardi).
+  amount:           ['Jami to\'lov summasi'],
+  paidAmount:       ['Jami to\'langan summa']
 };
 
 /** DATA varag'ida ishlatiladigan kanonik ustun tartibi (transformatsiyadan keyin). */

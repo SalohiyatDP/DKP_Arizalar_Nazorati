@@ -127,8 +127,27 @@
   .btn-primary:hover { background: var(--md-primary-dark); }
   .btn-danger { background: var(--md-danger); color: #fff; }
   .btn-ghost { background: transparent; }
-  .btn-icon { padding: 10px; border-radius: 50%; background: transparent; }
+  .btn-icon { padding: 8px; border-radius: 50%; background: transparent; }
   .btn-icon:hover { background: var(--bg-hover); }
+  .btn-icon .material-icons { font-size: 20px; }
+
+  /* Parol "ko'z" tugmasi — input ichida, kichik va markazlashgan */
+  .input-wrap { position: relative; }
+  .input-wrap .input { padding-right: 42px; }
+  .input-eye {
+    position: absolute; right: 6px; top: 50%; transform: translateY(-50%);
+    width: 30px; height: 30px; padding: 0; border: none; background: transparent;
+    border-radius: 8px; cursor: pointer; color: var(--text-secondary);
+    display: inline-flex; align-items: center; justify-content: center;
+  }
+  .input-eye:hover { background: var(--bg-hover); color: var(--text-primary); }
+  .input-eye .material-icons { font-size: 19px; }
+
+  /* Grid (jadval) boshqaruv paneli — sahifalash + eksport */
+  .grid-bar {
+    display: flex; align-items: center; justify-content: space-between;
+    gap: 12px; flex-wrap: wrap; margin-top: 12px;
+  }
   .btn .material-icons { font-size: 18px; }
   .btn-block { width: 100%; justify-content: center; }
 
