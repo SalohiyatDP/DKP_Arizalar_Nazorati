@@ -362,20 +362,45 @@ FinanceUI._inited = false;
 FinanceUI.init = function () {
   if (FinanceUI._inited) { FinanceUI.load(); return; }
   function fill(o) {
-    function opts(items) {
-      return '<option value="">Barchasi</option>' + (items || []).map(function (it) {
-        var n = it.name || it; return '<option value="' + esc(n) + '">' + esc(n) + '</option>';
-      }).join('');
-    }
-    var dd = document.getElementById('finDistrict'); if (dd) dd.innerHTML = opts(o.districts);
-    var ee = document.getElementById('finEngineer'); if (ee) ee.innerHTML = opts(o.engineers);
-    var rr = document.getElementById('finRegistrator'); if (rr) rr.innerHTML = opts(o.registrators);
+    FinanceUI._opts = o;
+    FinanceUI._fillDistricts(o.districts);
+    FinanceUI._fillEngineers(o.engineers);
+    FinanceUI._fillRegistrators(o.registrators);
+    // Tuman tanlanganda muhandis/registrator ro'yxatini kaskad bo'yicha filtrlash.
+    var dd = document.getElementById('finDistrict');
+    if (dd) dd.onchange = FinanceUI._onDistrict;
     FinanceUI._inited = true;
     FinanceUI.load();
   }
   if (State.filterOptions) fill(State.filterOptions);
   else api('apiFilterOptions', State.token).then(function (o) { State.filterOptions = o; fill(o); })
     .catch(function (e) { App.toast(e.message, 'error'); });
+};
+
+/** <option> ro'yxatini tuzadi (birinchi — "Barchasi"). */
+FinanceUI._optionsHtml = function (items) {
+  return '<option value="">Barchasi</option>' + (items || []).map(function (it) {
+    var n = it.name || it; return '<option value="' + esc(n) + '">' + esc(n) + '</option>';
+  }).join('');
+};
+FinanceUI._fillDistricts = function (list) {
+  var dd = document.getElementById('finDistrict'); if (dd) dd.innerHTML = FinanceUI._optionsHtml(list);
+};
+FinanceUI._fillEngineers = function (list) {
+  var ee = document.getElementById('finEngineer'); if (ee) ee.innerHTML = FinanceUI._optionsHtml(list);
+};
+FinanceUI._fillRegistrators = function (list) {
+  var rr = document.getElementById('finRegistrator'); if (rr) rr.innerHTML = FinanceUI._optionsHtml(list);
+};
+
+/** Tuman o'zgarganda — muhandis va registrator ro'yxatini shu tumandagilar bilan cheklaydi. */
+FinanceUI._onDistrict = function () {
+  if (!FinanceUI._opts) return;
+  var d = document.getElementById('finDistrict').value;
+  var engs = (FinanceUI._opts.engineers || []).filter(function (e) { return !d || e.district === d; });
+  var regs = (FinanceUI._opts.registrators || []).filter(function (r) { return !d || r.district === d; });
+  FinanceUI._fillEngineers(engs);
+  FinanceUI._fillRegistrators(regs);
 };
 
 FinanceUI._filters = function () {
