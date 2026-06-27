@@ -23,16 +23,20 @@ var Dashboard = (function () {
    * @returns {Array<Object>}
    */
   /**
-   * DATA varag'idagi XOM yozuvlar (manba filtrisiz, keshlanadi).
+   * Yozuvlarni TO'G'RIDAN-TO'G'RI HISOBOT varag'idan o'qiydi va jonli boyitadi.
+   * DATA varag'iga ko'chirish (round-trip) YO'Q — HISOBOT yagona manba.
+   * Sarlavhalar dinamik (header nomi) bo'yicha moslanadi; indeks hardcode emas.
    * @returns {Array<Object>}
    */
   function _loadRaw() {
     return Cache.remember(DATA_CACHE_KEY, function () {
-      if (!Repository.exists(SHEETS.DATA)) return [];
-      var parsed = Repository.readObjects(SHEETS.DATA);
-      // Sarlavhalar DATA_COLUMNS bilan mos kelishini ta'minlash uchun normalizatsiya.
-      return parsed.rows.map(_normalizeRecord);
-    }, Config.value('cacheTtlSec', 1800));
+      if (!Repository.exists(SHEETS.HISOBOT)) return [];
+      var parsed = Repository.readObjects(SHEETS.HISOBOT, Repository.hisobotHeaderMapper);
+      if (!parsed.rows.length) return [];
+      // Xom HISOBOT qatorlarini boyitilgan yozuvlarga aylantiramiz (summa, muddat,
+      // holat, residency... shu yerda jonli hisoblanadi — DATA varag'i kerak emas).
+      return BusinessLogic.enrichAll(parsed.rows, { today: new Date() });
+    }, Config.value('shortCacheTtlSec', 300));
   }
 
   /**
