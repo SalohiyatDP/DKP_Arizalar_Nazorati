@@ -1,7 +1,13 @@
-# clasp faqat Apps Script fayllarini (.gs, .html, appsscript.json) yuklasin.
-# Quyidagi naqsh: avval hamma narsani e'tiborsiz qoldiramiz, so'ng keraklilarini qaytaramiz.
+# clasp faqat loyihaning Apps Script fayllarini (.gs, .html, appsscript.json) yuklasin.
+# Naqsh logikasi: avval hamma narsani e'tiborsiz qoldiramiz, so'ng keraklilarini
+# qaytaramiz, eng oxirida esa node_modules va boshqa keraksiz papkalarni
+# qaytadan chiqarib tashlaymiz (oxirgi mos kelgan naqsh g'olib bo'ladi).
 **/**
 
 !appsscript.json
 !**/*.gs
 !**/*.html
+
+# node_modules ichidagi .gs/.html fayllar Apps Script'ga ketmasin
+node_modules/**
+.git/**
