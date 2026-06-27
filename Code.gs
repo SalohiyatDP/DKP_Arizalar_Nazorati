@@ -185,7 +185,6 @@ function apiGetProfile(token) {
       fullName: session.fullName,
       role: session.role,
       roleLabel: ROLE_LABEL[session.role] || session.role,
-      region: session.region,
       district: session.district,
       employeeId: session.employeeId,
       permissions: Security.permissionsOf(session)
@@ -225,6 +224,20 @@ function apiGetDashboard(token, filters) {
     var session = _auth(token);
     Security.require(session, PERMISSIONS.VIEW_DASHBOARD);
     return Dashboard.getDashboard(session, filters || {});
+  });
+}
+
+/**
+ * Muddat nazorati ma'lumotlarini qaytaradi (toifalar + bosqich kesimi + ro'yxatlar).
+ * @param {string} token
+ * @param {Object} [filters]
+ * @returns {Object}
+ */
+function apiDeadlineControl(token, filters) {
+  return _guard(function () {
+    var session = _auth(token);
+    Security.require(session, PERMISSIONS.VIEW_DASHBOARD);
+    return Dashboard.deadlineControl(session, filters || {});
   });
 }
 
@@ -549,8 +562,48 @@ function apiGetDeadlineSettings(token) {
       rules: DeadlineSettings.getRules(),
       holidays: DeadlineSettings.getHolidays(),
       defaultDays: DeadlineSettings.getDefaultDays(),
-      deadlineConfig: DeadlineSettings.getDeadlineConfig()
+      deadlineConfig: DeadlineSettings.getDeadlineConfig(),
+      sources: DeadlineSettings.getAllowedSources(),
+      availableSources: Dashboard.rawSources()
     };
+  });
+}
+
+/**
+ * Ruxsat etilgan ariza manbasini qo'shadi (faqat shu manbaalar hisobotga kiradi).
+ * @param {string} token
+ * @param {string} csrf
+ * @param {string} name
+ * @returns {Object}
+ */
+function apiAddSource(token, csrf, name) {
+  return _guard(function () {
+    var session = _auth(token);
+    _csrf(session, csrf);
+    Security.require(session, PERMISSIONS.MANAGE_SETTINGS);
+    var res = DeadlineSettings.addSource(name);
+    if (!res.ok) throw new Error(res.error);
+    AppLog.action(ACTION_TYPE.SETTINGS_UPDATE, session.username, 'Ariza manbasi qo\'shildi: ' + name);
+    return res;
+  });
+}
+
+/**
+ * Ruxsat etilgan ariza manbasini o'chiradi.
+ * @param {string} token
+ * @param {string} csrf
+ * @param {string} name
+ * @returns {Object}
+ */
+function apiDeleteSource(token, csrf, name) {
+  return _guard(function () {
+    var session = _auth(token);
+    _csrf(session, csrf);
+    Security.require(session, PERMISSIONS.MANAGE_SETTINGS);
+    var res = DeadlineSettings.deleteSource(name);
+    if (!res.ok) throw new Error(res.error);
+    AppLog.action(ACTION_TYPE.SETTINGS_UPDATE, session.username, 'Ariza manbasi o\'chirildi: ' + name);
+    return true;
   });
 }
 

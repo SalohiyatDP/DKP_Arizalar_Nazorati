@@ -131,13 +131,10 @@ var Import = (function () {
       });
       _step(report, 'Transform', 'OK', enriched.length + ' yozuv boyitildi');
 
-      // DATA varag'iga yozish.
-      _step(report, 'Save', 'RUNNING');
-      _ensureDataSheet();
-      Repository.writeObjects(SHEETS.DATA, enriched, DATA_COLUMNS, {
-        clearFirst: true, writeHeaders: true
-      });
-      _step(report, 'Save', 'OK', 'DATA varag\'iga saqlandi');
+      // DATA varag'iga ko'chirish SHART EMAS — HISOBOT yagona manba.
+      // Barcha o'qishlar (dashboard, moliya, hisobot, eksport) to'g'ridan-to'g'ri
+      // HISOBOT'dan jonli boyitish orqali amalga oshiriladi (DATA round-trip yo'q).
+      _step(report, 'Save', 'OK', 'DATA ko\'chirish o\'tkazib yuborildi (HISOBOT yagona manba)');
 
       // 6. STATISTICS
       _step(report, 'Statistics', 'RUNNING');
@@ -146,8 +143,13 @@ var Import = (function () {
 
       // 7. FINANCE
       _step(report, 'Finance', 'RUNNING');
-      Finance.rebuild(enriched);
-      _step(report, 'Finance', 'OK');
+      var fin = Finance.rebuild(enriched);
+      report.totalAmount = fin.summary.totalAmount;
+      report.totalPaid = fin.summary.totalPaid;
+      report.totalDebt = fin.summary.totalDebt;
+      _step(report, 'Finance', 'OK',
+        'Jami summa: ' + Utils.formatMoney(fin.summary.totalAmount, true) +
+        ' · To\'langan: ' + Utils.formatMoney(fin.summary.totalPaid, true));
 
       // 8. CACHE (eski keshni tozalash, yangisini isitish)
       _step(report, 'Cache', 'RUNNING');
@@ -161,6 +163,28 @@ var Import = (function () {
       _step(report, 'Dashboard', 'RUNNING');
       Dashboard.refreshSnapshot(enriched);
       _step(report, 'Dashboard', 'OK');
+
+      // 10. TEKSHIRUV — jonli dashboard o'qish yo'li (DATA'dan qayta o'qib + manba filtri).
+      // Bu aynan dashboard/Moliya ko'rsatadigan natija. Agar bu yerda 0 chiqsa —
+      // muammo o'qishda; agar 837M chiqsa — dashboard ham shuni ko'rsatishi kerak.
+      // 10. TEKSHIRUV — jonli o'qish yo'li (HISOBOT'dan boyitib). Dashboard/Moliya
+      // aynan shu natijani ko'rsatadi.
+      try {
+        Dashboard.invalidate();
+        var liveRows = Dashboard.loadAll();
+        var liveFin = Finance.compute(liveRows);
+        report.readbackRows = liveRows.length;
+        report.readbackAmount = liveFin.summary.totalAmount;
+        report.readbackPaid = liveFin.summary.totalPaid;
+        var filteredOut = report.validRows - liveRows.length;
+        _step(report, 'Tekshiruv', 'OK',
+          'HISOBOT\'dan o\'qildi va boyitildi: ' + liveRows.length + ' qator' +
+          (filteredOut > 0 ? ' (manba filtri ' + filteredOut + ' ta arizani chiqarib tashladi!)' : '') +
+          ' · Jami: ' + Utils.formatMoney(liveFin.summary.totalAmount, true) +
+          ' · To\'langan: ' + Utils.formatMoney(liveFin.summary.totalPaid, true));
+      } catch (verr) {
+        _step(report, 'Tekshiruv', 'ERROR', String(verr));
+      }
 
       // Oylik snapshot (tarixiy taqqoslash uchun).
       Statistics.saveMonthlySnapshot(enriched);

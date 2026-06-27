@@ -15,43 +15,39 @@ var Security = (function () {
   var SESSION_PREFIX = 'session::';
   var CSRF_PREFIX = 'csrf::';
 
-  /* --------------------------- PAROL HESHLASH ---------------------------- */
+  /* --------------------------- PAROL (OCHIQ) ----------------------------- */
+  // ESLATMA: Administrator qarori bo'yicha parollar OCHIQ saqlanadi (heshlanmaydi).
+  // Sabab: login-parolni admin beradi; muhandis parolni yo'qotsa, admin uni
+  // ko'rib/qayta berishi kerak. Heshlash o'chirilgan.
+  // ⚠️ Bu xavfsizlik nuqtai nazaridan tavsiya etilmaydi, lekin ichki tizim talabi.
 
   /**
-   * Tasodifiy salt generatsiya qiladi.
+   * Salt (eski sxema mosligi uchun saqlanadi — endi ishlatilmaydi).
    * @returns {string}
    */
   function generateSalt() {
-    return Utils.randomToken(Config.value('saltLength', 16));
+    return '';
   }
 
   /**
-   * Parolni salt va ko'p iteratsiya bilan heshlaydi (PBKDF2 uslubidagi zanjir).
+   * Parolni "heshlaydi" — ochiq rejim: parolni o'zgartirmasdan qaytaradi.
    * @param {string} password
-   * @param {string} salt
-   * @returns {string} hex hash
+   * @param {string} salt (e'tiborsiz)
+   * @returns {string} parolning o'zi (ochiq)
    */
   function hashPassword(password, salt) {
-    var iterations = Config.value('hashIterations', 10000);
-    var hash = Utils.sha256(salt + '::' + password + '::' + salt);
-    // Iteratsiyalarni kamaytirilgan, lekin yetarli sonda bajaramiz (GAS unumdorligi).
-    var rounds = Math.min(iterations, 5000);
-    for (var i = 0; i < rounds; i++) {
-      hash = Utils.sha256(hash + salt);
-    }
-    return hash;
+    return String(password == null ? '' : password);
   }
 
   /**
-   * Parolni tekshiradi (doimiy vaqtga yaqin taqqoslash).
+   * Parolni tekshiradi — ochiq taqqoslash (saqlangan qiymat ham ochiq).
    * @param {string} password
-   * @param {string} salt
-   * @param {string} expectedHash
+   * @param {string} salt (e'tiborsiz)
+   * @param {string} stored Saqlangan ochiq parol
    * @returns {boolean}
    */
-  function verifyPassword(password, salt, expectedHash) {
-    var actual = hashPassword(password, salt);
-    return _safeEqual(actual, expectedHash);
+  function verifyPassword(password, salt, stored) {
+    return _safeEqual(String(password == null ? '' : password), String(stored == null ? '' : stored));
   }
 
   /**
@@ -90,7 +86,6 @@ var Security = (function () {
     var payload = {
       username: user.username,
       role: user.role,
-      region: user.region || '',
       district: user.district || '',
       employeeId: user.employeeId || '',
       fullName: user.fullName || user.username,

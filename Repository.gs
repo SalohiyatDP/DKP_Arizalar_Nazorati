@@ -173,7 +173,13 @@ var Repository = (function () {
   function writeObjects(name, objects, columns, opts) {
     opts = opts || {};
     var sh = sheet(name, true);
-    if (opts.clearFirst !== false) clearData(name);
+    if (opts.clearFirst !== false) {
+      // Sarlavha qayta yoziladigan bo'lsa — varaqni TO'LIQ tozalaymiz (kontent + format).
+      // Ustun tartibi/soni o'zgarganda eski ustunlar qoldig'i yangi qiymatlarni
+      // buzmasligi (masalan amount ustuni eski sana/matn ustuni o'rniga tushishi) uchun.
+      if (opts.writeHeaders) sh.clear();
+      else clearData(name);
+    }
     if (opts.writeHeaders) writeHeaders(name, columns);
 
     if (!objects || objects.length === 0) return;
@@ -261,10 +267,15 @@ var Repository = (function () {
       var vars2 = HISOBOT_FIELDS[key2];
       for (var c = 0; c < normHeaders.length; c++) {
         if (used[c] || !normHeaders[c]) continue;
+        var h = normHeaders[c];
         for (var w = 0; w < vars2.length; w++) {
           var t = Utils.normalize(vars2[w]);
           if (!t) continue;
-          if (normHeaders[c].indexOf(t) !== -1 || t.indexOf(normHeaders[c]) !== -1) {
+          // "header ichida variant" — har doim ishonchli.
+          // "variant ichida header" (teskari) — faqat header yetarlicha o'ziga xos
+          // (>=6 belgi) bo'lsa. Aks holda "Jami" kabi qisqa generik ustun uzun
+          // variant ("Jami to'lov summasi") ichidan topilib, XATO bog'lanardi.
+          if (h.indexOf(t) !== -1 || (h.length >= 6 && t.indexOf(h) !== -1)) {
             map[c] = key2; used[c] = true; break;
           }
         }

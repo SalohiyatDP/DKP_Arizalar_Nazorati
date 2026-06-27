@@ -98,6 +98,30 @@
 
   .grid { display: grid; gap: 16px; }
   .kpi-grid { grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); }
+  .kpi-rows { display: flex; flex-direction: column; gap: 16px; }
+  .kpi-row { display: grid; gap: 16px; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); }
+
+  /* --- Tumanlar kesimida SVOD jadvali --- */
+  .summary-table { font-size: 12px; border-collapse: collapse; min-width: 900px; }
+  .summary-table th, .summary-table td {
+    border: 1px solid var(--divider); padding: 4px 6px; text-align: center; white-space: nowrap;
+  }
+  .summary-table thead th { background: var(--bg-surface-2); font-weight: 600; }
+  .summary-table thead tr.grp th { background: var(--md-primary); color: #fff; font-size: 11px; }
+  .summary-table thead th.grp-red { background: var(--md-danger); color: #fff; }
+  .summary-table thead th.grp-yellow { background: var(--md-orange); color: #fff; }
+  .summary-table thead th.cred { color: var(--md-danger); }
+  .summary-table th.ltxt, .summary-table td.ltxt { text-align: left; }
+  .summary-table tr.totals td { background: var(--bg-surface-2); font-weight: 700; }
+  .summary-table td.danger { color: var(--md-danger); font-weight: 600; }
+  .summary-table td.warn { color: var(--md-orange); font-weight: 600; }
+  .summary-table td.hl { background: rgba(255, 193, 7, 0.14); font-weight: 600; }
+  .summary-table td.ok { color: var(--md-success); }
+  .summary-table th.rot { height: 96px; vertical-align: bottom; padding: 4px 2px; }
+  .summary-table th.rot span {
+    display: inline-block; writing-mode: vertical-rl; transform: rotate(180deg);
+    white-space: nowrap; font-weight: 500; font-size: 11px; max-height: 90px; overflow: hidden;
+  }
   .charts-grid { grid-template-columns: repeat(auto-fill, minmax(360px, 1fr)); margin-top: 16px; }
 
   .kpi {
@@ -127,10 +151,38 @@
   .btn-primary:hover { background: var(--md-primary-dark); }
   .btn-danger { background: var(--md-danger); color: #fff; }
   .btn-ghost { background: transparent; }
-  .btn-icon { padding: 10px; border-radius: 50%; background: transparent; }
+  .btn-icon { padding: 8px; border-radius: 50%; background: transparent; }
   .btn-icon:hover { background: var(--bg-hover); }
+  .btn-icon .material-icons { font-size: 20px; }
+
+  /* Parol "ko'z" tugmasi — input ichida, kichik va markazlashgan */
+  .input-wrap { position: relative; }
+  .input-wrap .input { padding-right: 42px; }
+  .input-eye {
+    position: absolute; right: 6px; top: 50%; transform: translateY(-50%);
+    width: 30px; height: 30px; padding: 0; border: none; background: transparent;
+    border-radius: 8px; cursor: pointer; color: var(--text-secondary);
+    display: inline-flex; align-items: center; justify-content: center;
+  }
+  .input-eye:hover { background: var(--bg-hover); color: var(--text-primary); }
+  .input-eye .material-icons { font-size: 19px; }
+
+  /* Grid (jadval) boshqaruv paneli — sahifalash + eksport */
+  .grid-bar {
+    display: flex; align-items: center; justify-content: space-between;
+    gap: 12px; flex-wrap: wrap; margin-top: 12px;
+  }
   .btn .material-icons { font-size: 18px; }
   .btn-block { width: 100%; justify-content: center; }
+
+  /* Jadval ustun filtri (Grid) */
+  .data-table thead tr.grid-filter th { padding: 4px 6px; background: var(--bg-surface-2); }
+  .grid-fi {
+    width: 100%; box-sizing: border-box; padding: 5px 8px; font-size: 12px;
+    border: 1px solid var(--border-color); border-radius: 6px;
+    background: var(--bg-surface); color: var(--text-primary); font-family: inherit;
+  }
+  .grid-fi:focus { outline: none; border-color: var(--md-primary); }
 
   /* ----------------------------- FORMALAR ------------------------------- */
   .field { margin-bottom: 16px; }
@@ -242,6 +294,9 @@
     .kpi .value { font-size: 20px; }
     #toastContainer { left: 16px; right: 16px; }
     .toast { min-width: auto; }
+    .brand span { display: none; }
+    .kpi-row { grid-template-columns: 1fr 1fr; }
+    .modal.wide { width: 96vw; }
   }
 
   /* --------------------------- CHOP ETISH ------------------------------- */

@@ -32,7 +32,6 @@ var Reports = (function () {
       case 'dueToday': return _dueToday(rows);
       case 'engineer': return _byGroup(rows, 'engineer', 'Muhandislar hisoboti');
       case 'district': return _byGroup(rows, 'district', 'Tumanlar hisoboti');
-      case 'region': return _byGroup(rows, 'region', 'Viloyatlar hisoboti');
       case 'finance': return _finance(rows);
       case 'monthly': return _monthly(rows);
       case 'performance': return _performance(rows);
@@ -190,7 +189,7 @@ var Reports = (function () {
       ['Turar joy', s.residential],
       ['Noturar joy', s.nonResidential],
       ['Bajarilish foizi', s.completionRate + '%'],
-      ['O\'rtacha SLA', s.avgSla + '%']
+      ['O\'rtacha progress', s.avgProgress + '%']
     ];
     return _report('Umumiy hisobot', ['Ko\'rsatkich', 'Qiymat'], data);
   }

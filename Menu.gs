@@ -19,6 +19,7 @@ function onOpen(e) {
       .addItem('🔄 Statistikani yangilash', 'menuRefreshStats')
       .addSeparator()
       .addItem('👤 Administrator yaratish', 'menuSeedAdmin')
+      .addItem('🔑 Parollarni ochiq formatga o\'tkazish', 'menuMigratePasswords')
       .addItem('🌐 Veb-ilova havolasi', 'menuShowWebAppUrl')
       .addSeparator()
       .addItem('🧹 Keshni tozalash', 'menuClearCache')
@@ -85,9 +86,33 @@ function menuSeedAdmin() {
     ui.alert('Administrator yaratildi',
       'Login: ' + res.username + '\nParol: ' + res.password +
       '\n\nBirinchi kirishda parolni o\'zgartirish majburiy!', ui.ButtonSet.OK);
+  } else if (res.repaired) {
+    ui.alert('Administrator paroli tiklandi',
+      'Eski (heshlangan) parol ochiq formatga o\'tkazildi.\n' +
+      'Login: ' + res.username + '\nYangi parol: ' + res.password +
+      '\n\nKirib, parolni o\'zgartiring.', ui.ButtonSet.OK);
   } else {
-    ui.alert('Mavjud', 'Administrator allaqachon mavjud.', ui.ButtonSet.OK);
+    ui.alert('Mavjud', 'Administrator allaqachon mavjud (parol ochiq formatda).', ui.ButtonSet.OK);
   }
+}
+
+/**
+ * Menyu: heshlangan eski parollarni ochiq formatga o'tkazadi (bir martalik migratsiya).
+ */
+function menuMigratePasswords() {
+  var ui = SpreadsheetApp.getUi();
+  var resp = ui.alert('Parol migratsiyasi',
+    'Heshlangan eski parolga ega foydalanuvchilarga vaqtinchalik OCHIQ parol beriladi.\n' +
+    'Yangi parollar ro\'yxati ko\'rsatiladi — ularni egalariga yetkazing. Davom etamizmi?',
+    ui.ButtonSet.YES_NO);
+  if (resp !== ui.Button.YES) return;
+  var list = Login.migratePasswordsToPlaintext();
+  if (!list.length) {
+    ui.alert('Migratsiya', 'Heshlangan parol topilmadi — barchasi allaqachon ochiq.', ui.ButtonSet.OK);
+    return;
+  }
+  var msg = list.map(function (u) { return u.username + ' : ' + u.password; }).join('\n');
+  ui.alert('Yangi parollar (' + list.length + ' ta)', msg, ui.ButtonSet.OK);
 }
 
 /**

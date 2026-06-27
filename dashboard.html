@@ -10,20 +10,18 @@
     <button class="btn" onclick="Dash.load(true)"><span class="material-icons">refresh</span> Yangilash</button>
   </div>
 
-  <div class="grid kpi-grid" id="kpiContainer"><!-- KPI kartalar JS bilan to'ldiriladi --></div>
+  <div class="kpi-rows" id="kpiContainer"><!-- KPI kartalar JS bilan to'ldiriladi (3 qator) --></div>
 
-  <div class="grid charts-grid">
-    <div class="card"><div class="card-title"><span class="material-icons">donut_large</span> Holat taqsimoti</div>
-      <div id="chartStatus" class="chart-canvas"></div></div>
-    <div class="card"><div class="card-title"><span class="material-icons">home_work</span> Turar / Noturar</div>
-      <div id="chartResidency" class="chart-canvas"></div></div>
-    <div class="card"><div class="card-title"><span class="material-icons">payments</span> To'lov holati</div>
-      <div id="chartPayment" class="chart-canvas"></div></div>
-  </div>
-
-  <div class="grid charts-grid">
-    <div class="card"><div class="card-title"><span class="material-icons">military_tech</span> Top 10 muhandis</div>
-      <div class="table-wrap"><table class="data-table" id="topEngineersTable"></table></div></div>
+  <div class="card mt-16">
+    <div class="flex-between wrap mb-16">
+      <div class="card-title" style="margin:0;"><span class="material-icons">table_chart</span>
+        Tumanlar kesimida — jarayondagi arizalar tahlili</div>
+      <button class="btn btn-primary no-print" onclick="Dash.exportSummary()">
+        <span class="material-icons">grid_on</span> Excelga eksport</button>
+    </div>
+    <div class="table-wrap">
+      <table class="data-table summary-table" id="summaryTable"></table>
+    </div>
   </div>
 </section>
 
@@ -58,6 +56,42 @@
   </div>
 </section>
 
+<!-- ======================= MUDDAT NAZORATI ============================ -->
+<section id="view-deadlinectrl" class="view hidden">
+  <div class="page-title">Muddat nazorati</div>
+  <div class="page-subtitle mb-16">Muddat holati monitoringi — qaysi arizalar va hozir kimda turibdi</div>
+
+  <div class="kpi-rows" id="dcCards"></div>
+
+  <div class="card mb-16 mt-16 no-print">
+    <div class="filters-grid">
+      <div class="field eng-hide" style="margin:0;">
+        <label>Tuman</label>
+        <select class="select" id="dcDistrict" onchange="MuddatUI.onDistrictChange()"><option value="">Barchasi</option></select>
+      </div>
+      <div class="field eng-hide" style="margin:0;">
+        <label>Muhandis</label>
+        <select class="select" id="dcEngineer"><option value="">Barchasi</option></select>
+      </div>
+      <div class="field" style="margin:0; align-self:end;">
+        <button class="btn btn-primary btn-block" onclick="MuddatUI.load()">
+          <span class="material-icons">search</span> Qo'llash</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="flex-between wrap mb-16">
+      <h3 id="dcTitle" style="margin:0;">Muddati o'tgan arizalar</h3>
+      <button class="btn btn-primary no-print" onclick="MuddatUI.exportExcel()">
+        <span class="material-icons">grid_on</span> Excelga eksport</button>
+    </div>
+    <div id="dcBreakdown" style="margin-bottom:14px;"></div>
+    <div class="table-wrap"><table class="data-table" id="dcTable"></table></div>
+    <div id="dcTable_ctrl" class="no-print"></div>
+  </div>
+</section>
+
 <!-- =============================== MOLIYA =============================== -->
 <section id="view-finance" class="view hidden">
   <div class="flex-between wrap mb-16">
@@ -79,15 +113,15 @@
           <option value="registrator">Registratorlar bo'yicha</option>
         </select>
       </div>
-      <div class="field" style="margin:0;">
+      <div class="field eng-hide" style="margin:0;">
         <label>Tuman</label>
-        <select class="select" id="finDistrict"><option value="">Barchasi</option></select>
+        <select class="select" id="finDistrict" onchange="FinanceUI.onDistrictChange()"><option value="">Barchasi</option></select>
       </div>
-      <div class="field" style="margin:0;">
+      <div class="field eng-hide" style="margin:0;">
         <label>Muhandis</label>
         <select class="select" id="finEngineer"><option value="">Barchasi</option></select>
       </div>
-      <div class="field" style="margin:0;">
+      <div class="field eng-hide" style="margin:0;">
         <label>Registrator</label>
         <select class="select" id="finRegistrator"><option value="">Barchasi</option></select>
       </div>
@@ -101,6 +135,20 @@
   <div class="card">
     <div class="flex-between mb-16"><span id="finCount" style="color:var(--text-secondary)">—</span></div>
     <div class="table-wrap"><table class="data-table" id="financeRegionTable"></table></div>
+    <div id="financeRegionTable_ctrl" class="no-print"></div>
+  </div>
+
+  <div class="card mt-16">
+    <div class="card-title"><span class="material-icons">phone_in_talk</span>
+      To'lov jarayonidagi arizalar — qo'ng'iroq ro'yxati</div>
+    <p style="color:var(--text-secondary); font-size:13px; margin-bottom:12px;">
+      "Oxirgi jarayon nomi" = <strong>To'lov kutilmoqda</strong> bo'lgan arizalar. Ro'yxat yuqoridagi
+      <strong>guruhlash</strong>ga bo'ysunadi: <em>kadastr muhandislari</em> kesimida — Kadastr+Manzil to'lovi,
+      <em>registratorlar</em> kesimida — Registratsiya to'lovi kutilayotganlar. Ariza egasiga
+      qo'ng'iroq qilish uchun telefon raqami ustiga bosing.</p>
+    <div class="flex-between mb-16"><span id="pendingCount" style="color:var(--text-secondary)">—</span></div>
+    <div class="table-wrap"><table class="data-table" id="pendingTable"></table></div>
+    <div id="pendingTable_ctrl" class="no-print"></div>
   </div>
 </section>
 
@@ -118,18 +166,17 @@
           <option value="dueToday">Bugun tugaydigan arizalar</option>
           <option value="engineer">Muhandislar hisoboti</option>
           <option value="district">Tumanlar hisoboti</option>
-          <option value="region">Viloyatlar hisoboti</option>
           <option value="finance">Moliyaviy hisobot</option>
           <option value="monthly">Oylik hisobot</option>
           <option value="performance">Samaradorlik hisoboti</option>
           <option value="payment">To'lov hisoboti</option>
         </select>
       </div>
-      <div class="field" style="margin:0;">
+      <div class="field eng-hide" style="margin:0;">
         <label>Tuman</label>
         <select class="select" id="reportDistrict"><option value="">Barchasi</option></select>
       </div>
-      <div class="field" style="margin:0;">
+      <div class="field eng-hide" style="margin:0;">
         <label>Muhandis</label>
         <select class="select" id="reportEngineer"><option value="">Barchasi</option></select>
       </div>
@@ -143,18 +190,21 @@
     <div class="flex-between mb-16"><h3 id="reportTitle">—</h3>
       <button class="btn no-print" onclick="window.print()"><span class="material-icons">print</span> Chop etish</button></div>
     <div class="table-wrap"><table class="data-table" id="reportTable"></table></div>
+    <div id="reportTable_ctrl" class="no-print"></div>
   </div>
 </section>
 
 <!-- ============================== REYTINGLAR =========================== -->
 <section id="view-rankings" class="view hidden">
   <div class="page-title">Reytinglar</div>
-  <div class="page-subtitle mb-16">Muhandis, tuman va viloyat samaradorligi</div>
+  <div class="page-subtitle mb-16">Muhandis va tuman samaradorligi</div>
   <div class="grid charts-grid">
     <div class="card"><div class="card-title"><span class="material-icons">engineering</span> Muhandislar</div>
-      <div class="table-wrap"><table class="data-table" id="rankEngineers"></table></div></div>
+      <div class="table-wrap"><table class="data-table" id="rankEngineers"></table></div>
+      <div id="rankEngineers_ctrl" class="no-print"></div></div>
     <div class="card"><div class="card-title"><span class="material-icons">location_city</span> Tumanlar</div>
-      <div class="table-wrap"><table class="data-table" id="rankDistricts"></table></div></div>
+      <div class="table-wrap"><table class="data-table" id="rankDistricts"></table></div>
+      <div id="rankDistricts_ctrl" class="no-print"></div></div>
   </div>
 </section>
 
@@ -202,7 +252,8 @@
       <div class="page-subtitle">Hisoblarni boshqarish</div></div>
     <button class="btn btn-primary" onclick="UsersUI.openCreate()"><span class="material-icons">person_add</span> Yangi</button>
   </div>
-  <div class="card"><div class="table-wrap"><table class="data-table" id="usersTable"></table></div></div>
+  <div class="card"><div class="table-wrap"><table class="data-table" id="usersTable"></table></div>
+    <div id="usersTable_ctrl"></div></div>
 </section>
 
 <!-- ============================= AUDIT LOGLAR ========================== -->
@@ -217,7 +268,8 @@
       <button class="btn" onclick="LogsUI.load('export')">Eksportlar</button>
     </div>
   </div>
-  <div class="card"><div class="table-wrap"><table class="data-table" id="logsTable"></table></div></div>
+  <div class="card"><div class="table-wrap"><table class="data-table" id="logsTable"></table></div>
+    <div id="logsTable_ctrl"></div></div>
 </section>
 
 
@@ -257,6 +309,22 @@
     </div>
     <button class="btn btn-ghost" onclick="DeadlineUI.resetConfig()">
       <span class="material-icons">restart_alt</span> Standart qiymatlarga qaytarish</button>
+  </div>
+
+  <!-- Ariza manbasi filtri -->
+  <div class="card mb-16">
+    <div class="card-title"><span class="material-icons">filter_alt</span> Ariza manbalari (hisobotga kiritiladigan)</div>
+    <p style="color:var(--text-secondary); font-size:13px; margin-bottom:12px;">
+      Faqat shu yerda belgilangan manbaalardan kelgan arizalar hisobot, statistika va moliyaga kiritiladi.
+      Ro'yxat <strong>bo'sh</strong> bo'lsa — <strong>barcha manbalar</strong> kiritiladi.</p>
+    <div class="filters-grid mb-8">
+      <div class="field" style="margin:0;"><label>Manba qo'shish</label>
+        <select class="select" id="srcSelect"><option value="">— manba tanlang —</option></select></div>
+      <div class="field" style="margin:0; align-self:end;">
+        <button class="btn btn-primary btn-block" onclick="DeadlineUI.addSource()">
+          <span class="material-icons">add</span> Qo'shish</button></div>
+    </div>
+    <div id="sourcesList"></div>
   </div>
 
   <div class="grid charts-grid">

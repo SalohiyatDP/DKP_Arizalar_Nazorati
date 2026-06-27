@@ -410,6 +410,8 @@ var BusinessLogic = (function () {
 
   /**
    * To'lov holati va qarz summasini hisoblaydi.
+   * MUHIM: "Oxirgi jarayon nomi" = "To'lov kutilmoqda" bo'lsa — bu ariza
+   * to'lanishi lozim (kutilayotgan) deb belgilanadi (to'liq to'langanlar bundan mustasno).
    * @param {Object} row
    * @returns {{paymentStatus: string, debtAmount: number}}
    */
@@ -418,12 +420,21 @@ var BusinessLogic = (function () {
     var paid = Utils.toNumber(row.paidAmount);
     var debt = Math.max(0, amount - paid);
 
+    // Jarayon bosqichi to'lov kutilayotganini bildiradimi?
+    var stage = Utils.normalize(row.lastProcessName || '')
+      .replace(/['\u02bb\u02bc`\u2019\u2018]/g, '');
+    var stageWaiting = stage.indexOf('tolov kutilmoqda') !== -1 ||
+      stage.indexOf('tulov kutilmoqda') !== -1 ||
+      (stage.indexOf('tolov') !== -1 && stage.indexOf('kutil') !== -1);
+
     var explicit = Utils.normalize(row.paymentStatusRaw || row.paymentStatus);
     var ps;
-    if (explicit.indexOf("to'la") !== -1 || explicit.indexOf('paid') !== -1 ||
+    if (amount > 0 && paid >= amount) {
+      ps = PAYMENT_STATUS.PAID;                 // to'liq to'langan
+    } else if (stageWaiting) {
+      ps = PAYMENT_STATUS.WAITING;              // jarayon: to'lov kutilmoqda
+    } else if (explicit.indexOf("to'la") !== -1 || explicit.indexOf('paid') !== -1 ||
         explicit.indexOf('to`la') !== -1 || explicit.indexOf('tolangan') !== -1) {
-      ps = PAYMENT_STATUS.PAID;
-    } else if (amount > 0 && paid >= amount) {
       ps = PAYMENT_STATUS.PAID;
     } else if (paid > 0 && paid < amount) {
       ps = PAYMENT_STATUS.PARTIAL;
@@ -450,23 +461,42 @@ var BusinessLogic = (function () {
     rec.applicationNo = Utils.str(raw.applicationNo);
     rec.transactionNo = Utils.str(raw.transactionNo);
     rec.cadastreNo = Utils.str(raw.cadastreNo);
+    rec.arizaCadastreNo = Utils.str(raw.arizaCadastreNo);
     rec.customer = Utils.titleCase(raw.customer);
-    rec.pnfl = Utils.digitsOnly(raw.pnfl);
-    rec.tin = Utils.digitsOnly(raw.tin);
-    rec.region = Utils.str(raw.region);
+    rec.owner = Utils.titleCase(raw.owner);
+    rec.phone = Utils.str(raw.phone);
     rec.district = Utils.str(raw.district);
+    rec.mahallaCode = Utils.str(raw.mahallaCode);
+    rec.mahallaName = Utils.str(raw.mahallaName);
     rec.engineer = Utils.str(raw.engineer);
+    rec.chiefEngineer = Utils.str(raw.chiefEngineer);
     rec.registrator = Utils.str(raw.registrator);
     rec.applicationType = Utils.str(raw.applicationType);
+    rec.applicationPurpose = Utils.str(raw.applicationPurpose);
     rec.objectType = Utils.str(raw.objectType);
-    rec.serviceCode = Utils.str(raw.serviceCode);
-
-    // Muddat formulasi uchun qo'shimcha maydonlar (Excel: L,O,N,V,W).
     rec.objectType2 = Utils.str(raw.objectType2);
+    rec.objectSubdivision = Utils.str(raw.objectSubdivision);
+    rec.serviceCode = Utils.str(raw.serviceCode);
     rec.priznak = Utils.str(raw.priznak);
     rec.applicationSource = Utils.str(raw.applicationSource);
-    rec.cadastrePassportType = Utils.str(raw.cadastrePassportType);
+    rec.socialProtection = Utils.str(raw.socialProtection);
+
+    // Maydonlar (Excel formulasi: externalArea = W).
     rec.externalArea = Utils.toNumber(raw.externalArea);
+    rec.buildingArea = Utils.toNumber(raw.buildingArea);
+
+    // To'lov tasnifi.
+    rec.cadastrePassportType = Utils.str(raw.cadastrePassportType);
+    rec.registrationType = Utils.str(raw.registrationType);
+    rec.buildingOrLand = Utils.str(raw.buildingOrLand);
+    rec.addressAssignment = Utils.str(raw.addressAssignment);
+    rec.cadastreInvoiceArea = Utils.toNumber(raw.cadastreInvoiceArea);
+    rec.regInvoiceArea = Utils.toNumber(raw.regInvoiceArea);
+
+    // Jarayon holati (filtrlash uchun).
+    rec.lastProcessRole = Utils.str(raw.lastProcessRole);
+    rec.lastProcessName = Utils.str(raw.lastProcessName);
+    rec.rejectReason = Utils.str(raw.rejectReason);
 
     // Status normalizatsiyasi.
     raw.statusRaw = raw.status;
@@ -508,12 +538,26 @@ var BusinessLogic = (function () {
     rec.progressPercent = computeProgress(raw, today);
 
     // Moliya — to'lov uchta qismdan iborat (Kadastr + Registratsiya + Manzil).
-    var amountSum = Utils.toNumber(raw.amountCadastre) +
-      Utils.toNumber(raw.amountReg) + Utils.toNumber(raw.amountAddr);
-    var paidSum = Utils.toNumber(raw.paidCadastre) +
-      Utils.toNumber(raw.paidReg) + Utils.toNumber(raw.paidAddr);
+    var amtCad = Utils.toNumber(raw.amountCadastre);
+    var amtReg = Utils.toNumber(raw.amountReg);
+    var amtAddr = Utils.toNumber(raw.amountAddr);
+    var pdCad = Utils.toNumber(raw.paidCadastre);
+    var pdReg = Utils.toNumber(raw.paidReg);
+    var pdAddr = Utils.toNumber(raw.paidAddr);
+    var amountSum = amtCad + amtReg + amtAddr;
+    var paidSum = pdCad + pdReg + pdAddr;
     rec.amount = amountSum > 0 ? amountSum : Utils.toNumber(raw.amount);
     rec.paidAmount = paidSum > 0 ? paidSum : Utils.toNumber(raw.paidAmount);
+    // Komponentlar (kesim tahlili uchun).
+    rec.amountCadastre = amtCad;
+    rec.amountReg = amtReg;
+    rec.amountAddr = amtAddr;
+    rec.paidCadastre = pdCad;
+    rec.paidReg = pdReg;
+    rec.paidAddr = pdAddr;
+    // KADASTR MUHANDISI moliyasi: faqat "Kadastr to'lov summasi" + "Manzil to'lov summasi".
+    rec.engineerAmount = amtCad + amtAddr;
+    rec.engineerPaid = pdCad + pdAddr;
     // computePayment yig'ilgan summalardan foydalanishi uchun raw'ga ham yozamiz.
     raw.amount = rec.amount;
     raw.paidAmount = rec.paidAmount;

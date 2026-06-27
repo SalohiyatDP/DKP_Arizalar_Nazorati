@@ -114,7 +114,6 @@ App._enterApp = function () {
   App.applyPermissions();
   Profile.loadProfile(State.user);
   Dash.load();
-  App.loadNotifications();
   if (State.user && State.user.mustChangePassword) App.openModal('forcePasswordModal');
 };
 
@@ -147,6 +146,16 @@ App.applyPermissions = function () {
     var need = els[i].getAttribute('data-perm');
     els[i].style.display = perms.indexOf(need) !== -1 ? '' : 'none';
   }
+  // Kadastr muhandisi faqat o'z arizalarini ko'radi — tuman/muhandis filtrlari shart emas.
+  if (App.isEngineer()) {
+    var hide = document.querySelectorAll('.eng-hide');
+    for (var j = 0; j < hide.length; j++) hide[j].style.display = 'none';
+  }
+};
+
+/** Joriy foydalanuvchi kadastr muhandisimi? */
+App.isEngineer = function () {
+  return !!(State.user && String(State.user.role).toUpperCase() === 'ENGINEER');
 };
 
 /* ---------------------------- NAVIGATSIYA ---------------------------- */
@@ -193,6 +202,7 @@ App._loadView = function (view) {
   switch (view) {
     case 'dashboard': Dash.load(); break;
     case 'applications': Apps.init(); break;
+    case 'deadlinectrl': MuddatUI.init(); break;
     case 'finance': FinanceUI.init(); break;
     case 'reports': ReportsUI.init(); break;
     case 'rankings': RankingsUI.load(); break;
@@ -259,7 +269,6 @@ App.toggleTheme = function () {
   var next = cur === 'dark' ? 'light' : 'dark';
   App._applyTheme(next);
   Storage.set('dkp_theme', next);
-  if (typeof Dash !== 'undefined' && Dash.redraw) Dash.redraw();
 };
 
 /* --------------------------- SIDEBAR --------------------------------- */
@@ -318,27 +327,6 @@ App.onSearchInput = function (term) {
   }, 350);
 };
 
-/* ------------------------ BILDIRISHNOMALAR --------------------------- */
-App.loadNotifications = function () {
-  api('apiGetNotifications', State.token).then(function (list) {
-    var badge = document.getElementById('notifBadge');
-    var box = document.getElementById('notifList');
-    if (!list || !list.length) {
-      badge.classList.add('hidden');
-      box.innerHTML = '<div class="empty-state" style="padding:24px;">Yangi bildirishnoma yo\'q</div>';
-      return;
-    }
-    badge.textContent = list.length;
-    badge.classList.remove('hidden');
-    box.innerHTML = list.map(function (n) {
-      return '<div class="dropdown-item"><span class="material-icons status-' +
-        (n.level === 'danger' ? 'red' : n.level === 'warning' ? 'orange' : 'green') +
-        '">' + esc(n.icon) + '</span><div><strong>' + esc(n.title) +
-        '</strong><br><small>' + esc(n.message) + '</small></div></div>';
-    }).join('');
-  }).catch(function () {});
-};
-
 /* ----------------------------- LOGOUT -------------------------------- */
 App.logout = function () {
   api('apiLogout', State.token).catch(function () {}).then(function () {
@@ -372,7 +360,6 @@ Profile.loadProfile = function (user) {
   App._setText('profileFullName', user.fullName || user.username);
   App._setText('profileUsername', '@' + user.username);
   App._setText('pfRole', user.roleLabel || user.role);
-  App._setText('pfRegion', user.region || '—');
   App._setText('pfDistrict', user.district || '—');
   App._setText('pfEmployeeId', user.employeeId || '—');
   App._setText('pfPermissions', (user.permissions || []).length + ' ta ruxsat');

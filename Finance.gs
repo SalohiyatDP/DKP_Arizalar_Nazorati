@@ -22,11 +22,12 @@ var Finance = (function () {
    */
   function compute(rows) {
     var totalAmount = 0, totalPaid = 0, totalDebt = 0;
+    var waitingAmount = 0, waitingCount = 0;
     var byMonth = {};
-    var byRegion = {};
     var byDistrict = {};
     var byEngineer = {};
     var byRegistrator = {};
+    var pending = [];
 
     for (var i = 0; i < rows.length; i++) {
       var r = rows[i];
@@ -38,13 +39,55 @@ var Finance = (function () {
       totalPaid += paid;
       totalDebt += debt;
 
+      // To'lov jarayonida (kutilayotgan) — to'lanishi lozim summa = qarz (amount - paid).
+      var isWaiting = r.paymentStatus === PAYMENT_STATUS.WAITING;
+      var pendAmt = isWaiting ? (debt > 0 ? debt : Math.max(0, amount - paid)) : 0;
+      if (isWaiting) {
+        waitingCount++;
+        waitingAmount += pendAmt;
+        if (pending.length < 5000) {
+          var amtCadP = Utils.toNumber(r.amountCadastre), amtAddrP = Utils.toNumber(r.amountAddr);
+          var pdCadP = Utils.toNumber(r.paidCadastre), pdAddrP = Utils.toNumber(r.paidAddr);
+          var engPend = Math.max(0, (amtCadP + amtAddrP) - (pdCadP + pdAddrP));
+          var regPend = Math.max(0, Utils.toNumber(r.amountReg) - Utils.toNumber(r.paidReg));
+          pending.push({
+            transactionNo: Utils.str(r.transactionNo),
+            applicationNo: Utils.str(r.applicationNo),
+            cadastreNo: Utils.str(r.cadastreNo),
+            applicationSource: Utils.str(r.applicationSource),
+            customer: Utils.str(r.customer),
+            owner: Utils.str(r.owner),
+            phone: Utils.str(r.phone),
+            district: Utils.str(r.district),
+            engineer: Utils.str(r.engineer),
+            registrator: Utils.str(r.registrator),
+            applicationType: Utils.str(r.applicationType),
+            amount: amount,
+            paid: paid,
+            pendingAmount: pendAmt,
+            engineerPending: engPend,
+            registratorPending: regPend,
+            registerDate: Utils.formatDate(r.registerDate),
+            deadlineDate: Utils.formatDate(r.deadlineDate)
+          });
+        }
+      }
+
       var mKey = r.year + '-' + ('0' + r.month).slice(-2);
       _accMonth(byMonth, mKey, amount, paid, debt);
-      _accGroup(byRegion, r.region || 'Noma\'lum', amount, paid, debt);
-      _accGroup(byDistrict, r.district || 'Noma\'lum', amount, paid, debt);
-      _accGroup(byEngineer, r.engineer || 'Noma\'lum', amount, paid, debt);
-      _accGroup(byRegistrator, r.registrator || 'Noma\'lum', amount, paid, debt);
+      _accGroup(byDistrict, r.district || 'Noma\'lum', amount, paid, debt, isWaiting, pendAmt);
+      _accGroup(byRegistrator, r.registrator || 'Noma\'lum', amount, paid, debt, isWaiting, pendAmt);
+
+      // KADASTR MUHANDISI kesimi — to'lov faqat Kadastr + Manzil summalaridan.
+      var engAmount = Utils.toNumber(r.engineerAmount);
+      var engPaid = Utils.toNumber(r.engineerPaid);
+      var engDebt = Math.max(0, engAmount - engPaid);
+      var engPendAmt = isWaiting ? engDebt : 0;
+      _accGroup(byEngineer, r.engineer || 'Noma\'lum', engAmount, engPaid, engDebt, isWaiting, engPendAmt);
     }
+
+    // Kutilayotgan to'lov summasi bo'yicha kamayuvchi tartibda (eng katta qarz oldinda).
+    pending.sort(function (a, b) { return b.pendingAmount - a.pendingAmount; });
 
     var monthly = _monthArray(byMonth);
     var currentMonthKey = Utilities.formatDate(new Date(),
@@ -56,16 +99,18 @@ var Finance = (function () {
         totalAmount: totalAmount,
         totalPaid: totalPaid,
         totalDebt: totalDebt,
+        waitingAmount: waitingAmount,
+        waitingCount: waitingCount,
         collectionRate: Utils.percentOf(totalPaid, totalAmount),
         monthlyIncome: current.paid,
         monthlyExpected: current.amount,
         monthlyDebt: current.debt
       },
       monthly: monthly,
-      byRegion: _groupArray(byRegion),
       byDistrict: _groupArray(byDistrict),
       byEngineer: _groupArray(byEngineer),
       byRegistrator: _groupArray(byRegistrator),
+      pending: pending,
       comparison: _comparison(monthly)
     };
   }
@@ -78,12 +123,13 @@ var Finance = (function () {
     map[key].count++;
   }
 
-  function _accGroup(map, key, amount, paid, debt) {
-    if (!map[key]) map[key] = { name: key, amount: 0, paid: 0, debt: 0, count: 0 };
+  function _accGroup(map, key, amount, paid, debt, waiting, waitingAmt) {
+    if (!map[key]) map[key] = { name: key, amount: 0, paid: 0, debt: 0, count: 0, waitingCount: 0, waitingAmount: 0 };
     map[key].amount += amount;
     map[key].paid += paid;
     map[key].debt += debt;
     map[key].count++;
+    if (waiting) { map[key].waitingCount++; map[key].waitingAmount += (waitingAmt || 0); }
   }
 
   /**

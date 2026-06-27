@@ -21,6 +21,7 @@ var SHEETS = {
   SERVICE_RULES: 'SERVICE_RULES',
   AREA_RULES: 'AREA_RULES',
   DEADLINE_RULES: 'MUDDAT_QOIDALARI',
+  SOURCES: 'ARIZA_MANBASI',
   EXPORT: 'EXPORT',
   BACKUP: 'BACKUP',
   IMPORT_LOG: 'IMPORT_LOG',
@@ -36,57 +37,93 @@ var SHEETS = {
  * to'liq, so'ng qisman moslik bo'yicha avtomatik moslashtiriladi.
  */
 var HISOBOT_FIELDS = {
+  // --- Identifikatorlar ---
   applicationNo:    ['Ariza raqami', 'ARIZA RAQAMI', 'APPLICATION NUMBER'],
   transactionNo:    ['Tranzaksiya raqami', 'TRANZAKSIYA RAQAMI', 'TRANSACTION NUMBER'],
   cadastreNo:       ['Kadastr raqami', 'KADASTR RAQAMI', 'CADASTRE NUMBER'],
-  customer:         ['Buyurtmachi', 'Mulkdor', 'MIJOZ', 'ARIZACHI', 'CUSTOMER'],
-  pnfl:             ['PNFL', 'JSHSHIR', 'PINFL'],
-  tin:              ['STIR', 'INN', 'TIN'],
-  region:           ['Viloyat', 'VILOYAT', 'REGION', 'HUDUD'],
-  district:         ['Tuman', 'TUMAN', 'DISTRICT'],
-  engineer:         ['Ijrochi muhandis', 'MUHANDIS', 'ENGINEER', 'IJROCHI MUHANDIS'],
-  registrator:      ['Ijrochi registrator', 'REGISTRATOR', 'Registrator'],
-  applicationType:  ['Ariza turi', 'ARIZA TURI', 'APPLICATION TYPE', 'Ariza maqsadi'],
-  objectType:       ['Obyekt turi', 'OBYEKT TURI', 'OBJECT TYPE'],
-  serviceCode:      ['Tranzaksiya turi', 'XIZMAT KODI', 'SERVICE CODE'],
-  area:             ['Umumiy yer maydoni', 'MAYDON', 'AREA', 'YUZA'],
+  arizaCadastreNo:  ['Arizadagi kadastr raqami'],
 
-  // --- Muddat formulasi uchun qo'shimcha ustunlar (Excel: I,L,N,O,V,W) ---
-  // Har birida EXACT sarlavha BIRINCHI variant — mapper qisman moslikda
-  // boshqa maydon (objectType, area) tomonidan "o'g'irlanmasligi" uchun.
-  objectType2:        ['Obyekt turi 2'],                       // Excel L
-  priznak:            ['Priznak'],                             // Excel O
-  applicationSource:  ['Ariza manbasi'],                       // Excel N
-  cadastrePassportType: ['Kadastr passport olish turi'],       // Excel V
-  externalArea:       ['Tashqi o\'lchovlar bo\'yicha maydon', 'Tashqi o`lchovlar bo`yicha maydon'], // Excel W  registerDate:     ['Ariza kelib tushgan sana', 'QABUL SANASI', 'KIRISH SANASI', 'ARIZA SANASI'],
+  // --- Mijoz / mulkdor ---
+  customer:         ['Buyurtmachi', 'MIJOZ', 'CUSTOMER'],
+  owner:            ['Mulkdor'],
+  phone:            ['Arizachi tel raqami'],
+
+  // --- Joylashuv ---
+  district:         ['Tuman', 'TUMAN', 'DISTRICT'],
+  mahallaCode:      ['Mahalla kodi'],
+  mahallaName:      ['Mahalla nomi'],
+
+  // --- Mas'ul xodimlar ---
+  engineer:         ['Ijrochi muhandis', 'IJROCHI MUHANDIS', 'ENGINEER'],
+  chiefEngineer:    ['Ijrochi bosh muhandis'],
+  registrator:      ['Ijrochi registrator', 'Registrator', 'REGISTRATOR'],
+
+  // --- Ariza tasnifi ---
+  applicationType:    ['Ariza turi', 'ARIZA TURI', 'APPLICATION TYPE'],
+  applicationPurpose: ['Ariza maqsadi'],
+  objectType:         ['Obyekt turi', 'OBYEKT TURI', 'OBJECT TYPE'],
+  objectType2:        ['Obyekt turi 2'],
+  objectSubdivision:  ['Obyektning bo\'linish turi'],
+  serviceCode:        ['Tranzaksiya turi', 'XIZMAT KODI', 'SERVICE CODE'],
+  priznak:            ['Priznak'],
+  applicationSource:  ['Ariza manbasi'],
+  socialProtection:   ['Ijtimoiy ximoya', 'Ijtimoiy himoya'],
+
+  // --- Maydonlar (m²) ---
+  area:             ['Umumiy yer maydoni'],
+  externalArea:     ['Tashqi o\'lchovlar bo\'yicha maydon', 'Tashqi o`lchovlar bo`yicha maydon'],
+  buildingArea:     ['Qurilish ostidagi maydon'],
+
+  // --- Jarayon holati ---
+  lastProcessRole:  ['Oxirgi jarayon roli'],
+  lastProcessName:  ['Oxirgi jarayon nomi'],
+  rejectReason:     ['Rad sababi'],
+  note:             ['Rad etish izohi', 'IZOH', 'NOTE'],
+
+  // --- Sanalar ---
+  registerDate:     ['Ariza kelib tushgan sana', 'QABUL SANASI', 'KIRISH SANASI', 'ARIZA SANASI'],
   deadlineDate:     ['IJRO MUDDATI', 'MUDDAT SANASI', 'DEADLINE'],
   completeDate:     ['Oxirgi jarayon sana', 'BAJARILGAN SANA', 'TUGATILGAN SANA'],
   issuedDate:       ['To\'lovga chiqarilgan sana', 'TO\'LOVGA CHIQARILGAN SANA'],
-  status:           ['Tizimdagi holati', 'HOLAT', 'ARIZA HOLATI', 'STATUS'],
   paymentDate:      ['To\'langan sana', 'TO\'LOV SANASI', 'PAYMENT DATE'],
-  paymentStatus:    ['To\'lov holati', 'TO\'LOV HOLATI', 'PAYMENT STATUS'],
-  note:             ['Rad etish izohi', 'IZOH', 'NOTE', 'QAYD'],
+  status:           ['Tizimdagi holati', 'HOLAT', 'ARIZA HOLATI', 'STATUS'],
 
-  // To'lov uchta qismdan iborat — har biri alohida o'qiladi va enrichRow'da yig'iladi.
+  // --- To'lov ---
+  paymentStatus:        ['To\'lov holati', 'TO\'LOV HOLATI', 'PAYMENT STATUS'],
+  cadastrePassportType: ['Kadastr passport olish turi'],
+  registrationType:     ['Ro\'yxatdan o\'tkazish turi'],
+  buildingOrLand:       ['Bino yoki yer registratsiya'],
+  addressAssignment:    ['Ko\'chmas mulk obyektiga manzil belgilash'],
+  cadastreInvoiceArea:  ['Kadastr invoys maydoni'],
+  regInvoiceArea:       ['Registratsiya invoys maydoni'],
   amountCadastre:   ['Kadastr to\'lov summasi'],
   amountReg:        ['Registratsiya to\'lov summasi'],
   amountAddr:       ['Manzil to\'lov summasi'],
   paidCadastre:     ['Kadastr to\'langan summasi'],
   paidReg:          ['Registratsiya to\'langan summasi'],
   paidAddr:         ['Manzil to\'langan summasi'],
+  amount:           ['Jami to\'lov summasi', 'Umumiy to\'lov summasi', 'To\'lov summasi'],
+  paidAmount:       ['Jami to\'langan summa', 'Umumiy to\'langan summa', 'To\'langan summa']
 
-  // Umumiy zaxira maydonlari (agar yuqoridagilar topilmasa).
-  amount:           ['Jami to\'lov summasi', 'TO\'LOV SUMMASI', 'SUMMA', 'AMOUNT'],
-  paidAmount:       ['Jami to\'langan summa', 'TO\'LANGAN SUMMA', 'PAID AMOUNT']
+  // ESLATMA: quyidagi ustunlar ATAYLAB olinmaydi (kerak emas):
+  // Viloyat, STIR, PNFL, Foydalanuvchi turi va barcha vaqt-davomiyligi ustunlari
+  // (Tizim, Arxivchi, Filial..., Boshqarma..., DKP..., Jami, FMMI).
 };
 
 /** DATA varag'ida ishlatiladigan kanonik ustun tartibi (transformatsiyadan keyin). */
 var DATA_COLUMNS = [
-  'rowId', 'applicationNo', 'transactionNo', 'cadastreNo', 'customer', 'pnfl', 'tin',
-  'region', 'district', 'engineer', 'registrator', 'applicationType', 'objectType', 'serviceCode',
-  'objectType2', 'priznak', 'applicationSource', 'cadastrePassportType', 'externalArea',
-  'residency', 'area', 'registerDate', 'deadlineDate', 'deadlineDays', 'completeDate', 'issuedDate', 'status',
+  'rowId', 'applicationNo', 'transactionNo', 'cadastreNo', 'arizaCadastreNo',
+  'customer', 'owner', 'phone',
+  'district', 'mahallaCode', 'mahallaName',
+  'engineer', 'chiefEngineer', 'registrator',
+  'applicationType', 'applicationPurpose', 'objectType', 'objectType2', 'objectSubdivision',
+  'serviceCode', 'priznak', 'applicationSource', 'socialProtection',
+  'residency', 'area', 'externalArea', 'buildingArea',
+  'registerDate', 'deadlineDate', 'deadlineDays', 'completeDate', 'issuedDate', 'status',
   'deadlineStatus', 'remainingDays', 'progressPercent', 'colorStatus', 'issued',
+  'lastProcessRole', 'lastProcessName', 'rejectReason',
+  'cadastrePassportType', 'registrationType', 'buildingOrLand', 'addressAssignment',
+  'cadastreInvoiceArea', 'regInvoiceArea',
   'amount', 'paidAmount', 'debtAmount', 'paymentStatus', 'paymentDate', 'note',
   'year', 'month', 'importBatch', 'updatedAt'
 ];
@@ -182,28 +219,24 @@ var RESIDENCY_LABEL = {
   NON_RESIDENTIAL: 'Noturar joy'
 };
 
-/** Foydalanuvchi rollari. */
+/** Foydalanuvchi rollari. Tizim bitta viloyatdan boshqariladi (viloyat darajasi yo'q). */
 var ROLES = {
-  ADMIN: 'ADMIN',
-  REGION: 'REGION',
-  DISTRICT: 'DISTRICT',
-  ENGINEER: 'ENGINEER'
+  ADMIN: 'ADMIN',       // Viloyat darajasi — to'liq boshqaruv
+  CHIEF: 'CHIEF',       // Tuman bosh muhandisi — o'z tumani monitoringi
+  ENGINEER: 'ENGINEER'  // Tuman kadastr muhandisi — o'z tumani monitoringi
 };
 
 var ROLE_LABEL = {
   ADMIN: 'Administrator',
-  REGION: 'Viloyat',
-  DISTRICT: 'Tuman',
-  ENGINEER: 'Kadastr muhandisi'
+  CHIEF: 'Bosh muhandis',
+  ENGINEER: 'Kadastr muhandis'
 };
 
 /** Ruxsatlar (permission) ro'yxati. */
 var PERMISSIONS = {
   VIEW_DASHBOARD: 'VIEW_DASHBOARD',
-  VIEW_ALL_REGIONS: 'VIEW_ALL_REGIONS',
-  VIEW_OWN_REGION: 'VIEW_OWN_REGION',
+  VIEW_ALL_DISTRICTS: 'VIEW_ALL_DISTRICTS',
   VIEW_OWN_DISTRICT: 'VIEW_OWN_DISTRICT',
-  VIEW_OWN_APPLICATIONS: 'VIEW_OWN_APPLICATIONS',
   RUN_IMPORT: 'RUN_IMPORT',
   RUN_EXPORT: 'RUN_EXPORT',
   MANAGE_USERS: 'MANAGE_USERS',
@@ -215,34 +248,34 @@ var PERMISSIONS = {
 
 /** Rol -> ruxsatlar xaritasi (server tomonida tekshiriladi). */
 var ROLE_PERMISSIONS = {
+  // Administrator (viloyat darajasi) — to'liq boshqaruv, barcha tumanlar.
   ADMIN: [
-    PERMISSIONS.VIEW_DASHBOARD, PERMISSIONS.VIEW_ALL_REGIONS, PERMISSIONS.RUN_IMPORT,
+    PERMISSIONS.VIEW_DASHBOARD, PERMISSIONS.VIEW_ALL_DISTRICTS, PERMISSIONS.RUN_IMPORT,
     PERMISSIONS.RUN_EXPORT, PERMISSIONS.MANAGE_USERS, PERMISSIONS.MANAGE_SETTINGS,
     PERMISSIONS.VIEW_FINANCE, PERMISSIONS.VIEW_LOGS, PERMISSIONS.VIEW_REPORTS
   ],
-  REGION: [
-    PERMISSIONS.VIEW_DASHBOARD, PERMISSIONS.VIEW_OWN_REGION, PERMISSIONS.RUN_EXPORT,
-    PERMISSIONS.VIEW_FINANCE, PERMISSIONS.VIEW_REPORTS
+  // Bosh muhandis (tuman) — o'z tumani monitoringi (ko'rish, hisobot). Moliya YO'Q.
+  CHIEF: [
+    PERMISSIONS.VIEW_DASHBOARD, PERMISSIONS.VIEW_OWN_DISTRICT,
+    PERMISSIONS.VIEW_REPORTS
   ],
-  DISTRICT: [
-    PERMISSIONS.VIEW_DASHBOARD, PERMISSIONS.VIEW_OWN_DISTRICT, PERMISSIONS.RUN_EXPORT,
-    PERMISSIONS.VIEW_FINANCE, PERMISSIONS.VIEW_REPORTS
-  ],
+  // Kadastr muhandis (tuman) — o'z tumani monitoringi (ko'rish, moliya, hisobot).
   ENGINEER: [
-    PERMISSIONS.VIEW_DASHBOARD, PERMISSIONS.VIEW_OWN_APPLICATIONS, PERMISSIONS.VIEW_REPORTS
+    PERMISSIONS.VIEW_DASHBOARD, PERMISSIONS.VIEW_OWN_DISTRICT,
+    PERMISSIONS.VIEW_FINANCE, PERMISSIONS.VIEW_REPORTS
   ]
 };
 
-/** EMPLOYEES varag'ining ustunlari. */
+/** EMPLOYEES varag'ining ustunlari. (region — eski sxema mosligi uchun saqlanadi, ishlatilmaydi) */
 var EMPLOYEE_COLUMNS = [
   'employeeId', 'fullName', 'role', 'region', 'district', 'phone', 'email', 'status'
 ];
 
-/** LOGIN varag'ining ustunlari. */
+/** LOGIN varag'ining ustunlari. (fullName — F.I.O., region — eski sxema mosligi uchun) */
 var LOGIN_COLUMNS = [
   'username', 'passwordHash', 'salt', 'role', 'region', 'district', 'employeeId',
   'status', 'mustChangePassword', 'passwordHistory', 'lastLogin', 'failedAttempts',
-  'lockedUntil', 'createdAt', 'updatedAt'
+  'lockedUntil', 'createdAt', 'updatedAt', 'fullName'
 ];
 
 /** Log darajalari. */
