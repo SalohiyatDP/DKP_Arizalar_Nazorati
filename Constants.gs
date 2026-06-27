@@ -254,10 +254,10 @@ var ROLE_PERMISSIONS = {
     PERMISSIONS.RUN_EXPORT, PERMISSIONS.MANAGE_USERS, PERMISSIONS.MANAGE_SETTINGS,
     PERMISSIONS.VIEW_FINANCE, PERMISSIONS.VIEW_LOGS, PERMISSIONS.VIEW_REPORTS
   ],
-  // Bosh muhandis (tuman) — o'z tumani monitoringi (ko'rish, moliya, hisobot).
+  // Bosh muhandis (tuman) — o'z tumani monitoringi (ko'rish, hisobot). Moliya YO'Q.
   CHIEF: [
     PERMISSIONS.VIEW_DASHBOARD, PERMISSIONS.VIEW_OWN_DISTRICT,
-    PERMISSIONS.VIEW_FINANCE, PERMISSIONS.VIEW_REPORTS
+    PERMISSIONS.VIEW_REPORTS
   ],
   // Kadastr muhandis (tuman) — o'z tumani monitoringi (ko'rish, moliya, hisobot).
   ENGINEER: [
