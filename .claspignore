@@ -1,0 +1,7 @@
+# clasp faqat Apps Script fayllarini (.gs, .html, appsscript.json) yuklasin.
+# Quyidagi naqsh: avval hamma narsani e'tiborsiz qoldiramiz, so'ng keraklilarini qaytaramiz.
+**/**
+
+!appsscript.json
+!**/*.gs
+!**/*.html

@@ -1,0 +1,12 @@
+# Bog'liqliklar
+node_modules/
+
+# clasp — shaxsiy (scriptId har bir muhitda har xil)
+.clasp.json
+.clasprc.json
+
+# Vaqtinchalik / log fayllar
+*.log
+_sim.js
+tmp/
+.DS_Store

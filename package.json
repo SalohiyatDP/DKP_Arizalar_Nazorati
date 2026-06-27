@@ -1,0 +1,29 @@
+{
+  "name": "dkp-arizalar-nazorati",
+  "version": "1.0.0",
+  "description": "DKP Arizalar Nazorati — Davlat Kadastr Palatasi uchun Google Apps Script asosidagi korporativ analitika platformasi",
+  "private": true,
+  "scripts": {
+    "login": "clasp login",
+    "setup": "clasp clone",
+    "push": "clasp push -f",
+    "pull": "clasp pull",
+    "watch": "clasp push --watch",
+    "open": "clasp open",
+    "deploy": "clasp deploy --description \"DKP Arizalar Nazorati\"",
+    "deployments": "clasp deployments",
+    "logs": "clasp logs"
+  },
+  "keywords": [
+    "google-apps-script",
+    "clasp",
+    "kadastr",
+    "dkp",
+    "analytics"
+  ],
+  "author": "Davlat Kadastr Palatasi",
+  "license": "UNLICENSED",
+  "devDependencies": {
+    "@google/clasp": "^2.4.2"
+  }
+}

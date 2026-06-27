@@ -152,14 +152,70 @@ Loyiha modulli qurilgan (MVC + Repository + Service + Utility qatlamlari):
 
 ## 🚀 O'rnatish va ishga tushirish
 
-1. Google Spreadsheet'ni oching (yuqoridagi varaqlar mavjud bo'lishi kerak).
-2. **Kengaytmalar → Apps Script** orqali skript muharririni oching.
-3. Ushbu repozitoriydagi barcha `.gs` va `.html` fayllarni loyihaga qo'shing
-   (yoki [clasp](https://github.com/google/clasp) yordamida `clasp push` qiling).
-4. `appsscript.json` sozlamalarini saqlang (vaqt mintaqasi: `Asia/Tashkent`).
-5. Spreadsheet menyusidan **DKP Nazorat → Administrator yaratish** ni bosing.
-6. **Deploy → New deployment → Web app** orqali veb-ilovani joylashtiring.
-7. Berilgan URL orqali tizimga kiring.
+Ikki usul mavjud. **Clasp orqali o'rnatish tavsiya etiladi** — barcha fayllar
+bir zumda, to'g'ri nomlar bilan yuklanadi va versiyalar aralashib ketmaydi.
+
+### A usul — Clasp orqali (tavsiya etiladi) ✅
+
+**Talab:** [Node.js](https://nodejs.org) o'rnatilgan bo'lishi kerak.
+
+1. Repozitoriyni yuklab oling (clone yoki ZIP) va papkaga kiring:
+   ```bash
+   git clone https://github.com/SalohiyatDP/DKP_Arizalar_Nazorati.git
+   cd DKP_Arizalar_Nazorati
+   ```
+2. Clasp'ni o'rnating va Google hisobingizga kiring:
+   ```bash
+   npm install            # @google/clasp ni o'rnatadi
+   npm run login          # brauzerda Google hisobni tasdiqlaysiz
+   ```
+   > Birinchi marta foydalanyapsizmi? [Apps Script API](https://script.google.com/home/usersettings)
+   > ni **yoqib qo'ying** (Settings → Google Apps Script API → ON).
+3. **Script ID** ni oling: Spreadsheet → **Kengaytmalar → Apps Script** →
+   **Loyiha sozlamalari (⚙️) → "Script ID"** ni nusxalang.
+4. `.clasp.json` faylini yarating (namuna `.clasp.json.example` da bor):
+   ```json
+   { "scriptId": "SIZNING_SCRIPT_ID", "rootDir": "." }
+   ```
+5. Barcha fayllarni yuklang:
+   ```bash
+   npm run push           # = clasp push -f
+   ```
+6. Apps Script muharririda `appsscript.json` saqlanganini tekshiring.
+7. Spreadsheet menyusidan **DKP Nazorat → Administrator yaratish** ni bosing.
+8. **Deploy → New deployment → Web app** orqali joylashtiring va URL'dan kiring.
+
+**Foydali clasp buyruqlari:**
+
+| Buyruq | Vazifasi |
+|--------|----------|
+| `npm run push` | Barcha o'zgarishlarni yuklash (`clasp push -f`) |
+| `npm run pull` | Apps Script'dan o'zgarishlarni olib kelish |
+| `npm run watch` | O'zgarishlarni avtomatik yuklab turish |
+| `npm run open` | Loyihani brauzerda ochish |
+| `npm run deploy` | Yangi deployment yaratish |
+| `npm run logs` | Server loglarini ko'rish |
+
+> `.claspignore` fayli faqat `.gs`, `.html` va `appsscript.json` fayllarini
+> yuklaydi — README, package.json va boshqalar yuklanmaydi.
+
+### B usul — Qo'lda nusxalash
+
+1. Spreadsheet → **Kengaytmalar → Apps Script** ni oching.
+2. Har bir faylni qo'lda yarating va tarkibini nusxalang.
+
+> ⚠️ **HTML fayl nomlari aniq bo'lishi shart** (Apps Script `.html` ni o'zi qo'shadi):
+> | Repozitoriy fayli | Apps Script'dagi nom |
+> |---|---|
+> | `script.html` | **script** |
+> | `login.js.html` | **login.js** |
+> | `dashboard.js.html` | **dashboard.js** |
+> | `dashboard.html` | **dashboard** |
+>
+> Agar `login.js` ni "login" deb nomlasangiz — `include()` ishlamaydi va sahifa buziladi.
+> Shu sababli **Clasp usuli ancha ishonchli**.
+
+3. `appsscript.json` ni saqlang, administratorni yarating, Web app sifatida joylashtiring.
 
 ### Standart kirish
 
