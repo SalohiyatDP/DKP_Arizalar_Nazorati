@@ -217,6 +217,8 @@ var Security = (function () {
     can: can,
     require: require,
     requireRole: requireRole,
-    escapeHtml: Utils.escapeHtml
+    // Eslatma: kechiktirilgan murojaat — GAS fayllarni alifbo tartibida yuklaydi,
+    // shuning uchun Utils'ga modul yuklanish vaqtida emas, chaqiruv vaqtida murojaat qilamiz.
+    escapeHtml: function (v) { return Utils.escapeHtml(v); }
   };
 })();
