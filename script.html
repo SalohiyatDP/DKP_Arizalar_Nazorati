@@ -37,34 +37,55 @@ function esc(v) {
 /* ========================== APP NAMESPACE ============================= */
 var App = {};
 
+/* Xavfsiz localStorage o'rovi — sandbox/iframe'da xato bermaydi. */
+var Storage = {
+  _mem: {},
+  get: function (k) {
+    try { return localStorage.getItem(k); }
+    catch (e) { return this._mem[k] != null ? this._mem[k] : null; }
+  },
+  set: function (k, v) {
+    try { localStorage.setItem(k, v); } catch (e) { this._mem[k] = v; }
+  },
+  remove: function (k) {
+    try { localStorage.removeItem(k); } catch (e) { delete this._mem[k]; }
+  }
+};
 
 /* --------------------------- INIT / SESSIYA -------------------------- */
 App.init = function () {
-  App._initTheme();
-  App._bindGlobalClicks();
-  var saved = App._loadSession();
-  if (saved && saved.token) {
-    State.token = saved.token; State.csrf = saved.csrf; State.user = saved.user;
-    App._enterApp();
-  } else {
-    App._showLogin();
+  try {
+    App._initTheme();
+    App._bindGlobalClicks();
+    var saved = App._loadSession();
+    if (saved && saved.token) {
+      State.token = saved.token; State.csrf = saved.csrf; State.user = saved.user;
+      App._enterApp();
+    } else {
+      App._showLogin();
+    }
+  } catch (err) {
+    // Init xatosi bo'lsa ham foydalanuvchi login ko'rishi uchun loginni ko'rsatamiz.
+    try { App._showLogin(); } catch (e2) {}
+    try { App.toast('Boshlang\'ich xato: ' + (err && err.message), 'error'); } catch (e3) {}
+  } finally {
+    App.hideLoading();
   }
-  App.hideLoading();
 };
 
 App._loadSession = function () {
-  try { return JSON.parse(localStorage.getItem('dkp_session') || 'null'); }
+  try { return JSON.parse(Storage.get('dkp_session') || 'null'); }
   catch (e) { return null; }
 };
 
 App.saveSession = function (data) {
   State.token = data.token; State.csrf = data.csrf; State.user = data.user;
-  try { localStorage.setItem('dkp_session', JSON.stringify(data)); } catch (e) {}
+  Storage.set('dkp_session', JSON.stringify(data));
 };
 
 App.clearSession = function () {
   State.token = State.csrf = State.user = null;
-  try { localStorage.removeItem('dkp_session'); } catch (e) {}
+  Storage.remove('dkp_session');
 };
 
 App._showLogin = function () {
@@ -209,7 +230,7 @@ App.progress = function (pct) {
 
 /* ----------------------------- MAVZU --------------------------------- */
 App._initTheme = function () {
-  var saved = localStorage.getItem('dkp_theme');
+  var saved = Storage.get('dkp_theme');
   var dark = saved ? saved === 'dark' : (window.APP_CONFIG && window.APP_CONFIG.darkModeDefault);
   App._applyTheme(dark ? 'dark' : 'light');
 };
@@ -222,7 +243,7 @@ App.toggleTheme = function () {
   var cur = document.documentElement.getAttribute('data-theme') || 'light';
   var next = cur === 'dark' ? 'light' : 'dark';
   App._applyTheme(next);
-  localStorage.setItem('dkp_theme', next);
+  Storage.set('dkp_theme', next);
   if (typeof Dash !== 'undefined' && Dash.redraw) Dash.redraw();
 };
 
@@ -377,5 +398,21 @@ Profile.submitChangePassword = function (ev) {
 };
 
 /* ============================== BOOT ================================= */
-document.addEventListener('DOMContentLoaded', function () { App.init(); });
+// Global xato — loading'da qotib qolmaslik uchun.
+window.addEventListener('error', function (ev) {
+  try { App.hideLoading(); } catch (e) {}
+});
+// Xavfsizlik taymeri — har qanday holatda loading 8 soniyada yashiriladi.
+setTimeout(function () {
+  var el = document.getElementById('loadingOverlay');
+  if (el && el.style.display !== 'none') {
+    try { App.hideLoading(); } catch (e) { el.style.display = 'none'; }
+  }
+}, 8000);
+
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', function () { App.init(); });
+} else {
+  App.init();
+}
 </script>
