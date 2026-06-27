@@ -147,6 +147,16 @@ App.applyPermissions = function () {
     var need = els[i].getAttribute('data-perm');
     els[i].style.display = perms.indexOf(need) !== -1 ? '' : 'none';
   }
+  // Kadastr muhandisi faqat o'z arizalarini ko'radi — tuman/muhandis filtrlari shart emas.
+  if (App.isEngineer()) {
+    var hide = document.querySelectorAll('.eng-hide');
+    for (var j = 0; j < hide.length; j++) hide[j].style.display = 'none';
+  }
+};
+
+/** Joriy foydalanuvchi kadastr muhandisimi? */
+App.isEngineer = function () {
+  return !!(State.user && String(State.user.role).toUpperCase() === 'ENGINEER');
 };
 
 /* ---------------------------- NAVIGATSIYA ---------------------------- */

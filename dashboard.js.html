@@ -346,8 +346,11 @@ Apps._renderFilters = function (o) {
       (onchange ? ' onchange="' + onchange + '"' : '') + '>' + opts + '</select></div>';
   }
   var html = '';
-  html += selBox('fDistrict', 'Tuman', o.districts, 'name', 'name', 'Apps.onDistrictChange()');
-  html += selBox('fEngineer', 'Muhandis', o.engineers, 'name', 'name');
+  if (!App.isEngineer()) {
+    // Tuman/Muhandis filtrlari faqat admin va bosh muhandis uchun.
+    html += selBox('fDistrict', 'Tuman', o.districts, 'name', 'name', 'Apps.onDistrictChange()');
+    html += selBox('fEngineer', 'Muhandis', o.engineers, 'name', 'name');
+  }
   html += selBox('fType', 'Ariza turi', o.applicationTypes);
   html += selBox('fPurpose', 'Ariza maqsadi', o.applicationPurposes || []);
   html += selBox('fProcRole', 'Oxirgi jarayon roli', o.lastProcessRoles || []);

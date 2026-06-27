@@ -138,10 +138,21 @@ var Dashboard = (function () {
       case ROLES.ADMIN:
         return rows;
       case ROLES.CHIEF:
-      case ROLES.ENGINEER:
-        // Bosh muhandis va kadastr muhandis — faqat o'z tumani.
+        // Bosh muhandis — o'z tumanidagi barcha arizalar.
         return rows.filter(function (r) {
           return Utils.normalize(r.district) === Utils.normalize(user.district);
+        });
+      case ROLES.ENGINEER:
+        // Kadastr muhandisi — FAQAT o'ziga biriktirilgan arizalar (ism bo'yicha).
+        // F.I.O. bo'sh bo'lsa (kamdan-kam) — xavfsizlik uchun o'z tumani doirasi.
+        if (!Utils.str(user.fullName)) {
+          return rows.filter(function (r) {
+            return Utils.normalize(r.district) === Utils.normalize(user.district);
+          });
+        }
+        var me = Utils.normalize(user.fullName);
+        return rows.filter(function (r) {
+          return Utils.normalize(r.engineer) === me;
         });
       default:
         return [];
