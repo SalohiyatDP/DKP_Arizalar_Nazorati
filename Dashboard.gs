@@ -484,14 +484,16 @@ var Dashboard = (function () {
 
   /**
    * Tuman kesimidagi SVOD jadvali (boshqaruv paneli ostida ko'rsatiladi).
-   * FAQAT ochiq (yakunlanmagan) arizalar bo'yicha hisoblanadi — chunki ular
-   * oylar bo'ylab o'tib boradi (kümülativ ish hajmi).
    *
-   * Excel mantig'i (tasdiqlangan):
-   *   Jami yakunlash kerak = Bugun muddati tugaydigan + Muddati o'tgan
-   *   Muddati o'tgan = Filial tomonida o'tgan + Registratsiya tomonidan o'tgan
-   *   Turar + Noturar = Jami
-   * Ya'ni "Bugun muddati tugaydigan" = muddati hali o'tmagan ochiq arizalar.
+   * Excel mantig'i (skrinshotlar bilan tasdiqlangan):
+   *   "Jami yakunlash kerak" = BUGUN muddati tugaydigan + MUDDATI O'TGAN
+   *      (ya'ni muddati <= bugun bo'lgan, hali yakunlanmagan arizalar).
+   *      Kelajakda muddati keladigan arizalar BUNGA KIRMAYDI.
+   *   "Muddati o'tgan" = Filial tomonida o'tgan + Registratsiya tomonidan o'tgan.
+   *   Turar + Noturar = Jami (shu to'plam ichida).
+   *   Rollar kesmi ham shu "Jami" to'plami ichida (lastProcessName bo'yicha).
+   *   "Muddat buzilishini oldini olish" (1..>10 kun qolgan) = ALOHIDA to'plam:
+   *      kelajakda muddati keladigan (hali ulgurish mumkin) arizalar.
    *
    * @param {Array<Object>} rows  Rol bo'yicha cheklangan (butun davr) yozuvlar
    * @returns {{roleColumns: Array<string>, rows: Array<Object>, totals: Object}}
@@ -500,8 +502,8 @@ var Dashboard = (function () {
     function blank(name) {
       return {
         district: name, total: 0,
-        expiredBranch: 0, expiredReg: 0, dueActive: 0,
-        residential: 0, nonResidential: 0, completed: 0, roles: {},
+        expiredBranch: 0, expiredReg: 0, dueToday: 0,
+        residential: 0, nonResidential: 0, roles: {},
         d1: 0, d2: 0, d3: 0, d4: 0, d5: 0, d6_10: 0, d10p: 0
       };
     }
@@ -511,30 +513,35 @@ var Dashboard = (function () {
 
     for (var i = 0; i < rows.length; i++) {
       var r = rows[i];
+      var ds = r.deadlineStatus;
+      if (ds === DEADLINE_STATUS.COMPLETED) continue;   // yakunlangan — chiqarib tashlanadi
+
       var dk = r.district || 'Noma\'lum';
       if (!byDistrict[dk]) byDistrict[dk] = blank(dk);
       var g = byDistrict[dk];
 
-      // Yakunlangan arizalar — alohida hisoblanadi (ochiq ish hajmiga kirmaydi).
-      if (r.deadlineStatus === DEADLINE_STATUS.COMPLETED) {
-        g.completed++; totals.completed++;
-        continue;
-      }
+      if (ds === DEADLINE_STATUS.DUE_TODAY || ds === DEADLINE_STATUS.EXPIRED) {
+        // --- "Jami yakunlash kerak" to'plami (muddati bugun yoki o'tgan) ---
+        g.total++; totals.total++;
 
-      // --- Ochiq (jarayonda turgan) arizalar ---
-      g.total++; totals.total++;
+        if (r.residency === RESIDENCY.RESIDENTIAL) { g.residential++; totals.residential++; }
+        else if (r.residency === RESIDENCY.NON_RESIDENTIAL) { g.nonResidential++; totals.nonResidential++; }
 
-      if (r.residency === RESIDENCY.RESIDENTIAL) { g.residential++; totals.residential++; }
-      else if (r.residency === RESIDENCY.NON_RESIDENTIAL) { g.nonResidential++; totals.nonResidential++; }
+        if (ds === DEADLINE_STATUS.DUE_TODAY) {
+          g.dueToday++; totals.dueToday++;
+        } else { // EXPIRED — joriy bosqichga qarab Filial yoki Registratsiya tomonida
+          if (_isRegistrationStage(r)) { g.expiredReg++; totals.expiredReg++; }
+          else { g.expiredBranch++; totals.expiredBranch++; }
+        }
 
-      if (r.deadlineStatus === DEADLINE_STATUS.EXPIRED) {
-        // Muddati o'tgan — joriy bosqichga qarab Filial yoki Registratsiya tomonida.
-        if (_isRegistrationStage(r)) { g.expiredReg++; totals.expiredReg++; }
-        else { g.expiredBranch++; totals.expiredBranch++; }
+        // Jarayonda turgan rol (oxirgi jarayon nomi) kesimi — dinamik ustunlar.
+        var role = Utils.str(r.lastProcessName) || 'Aniqlanmagan';
+        roleSet[role] = true;
+        g.roles[role] = (g.roles[role] || 0) + 1;
+        totals.roles[role] = (totals.roles[role] || 0) + 1;
+
       } else {
-        // Muddati hali o'tmagan ochiq arizalar ("Bugun muddati tugaydigan").
-        g.dueActive++; totals.dueActive++;
-        // Muddat buzilishigacha qolgan kunlar (faqat oldinda turganlar).
+        // --- Kelajakda muddati keladigan arizalar (oldini olish tahlili) ---
         var rem = Utils.toNumber(r.remainingDays);
         if (rem === 1) { g.d1++; totals.d1++; }
         else if (rem === 2) { g.d2++; totals.d2++; }
@@ -544,12 +551,6 @@ var Dashboard = (function () {
         else if (rem >= 6 && rem <= 10) { g.d6_10++; totals.d6_10++; }
         else if (rem > 10) { g.d10p++; totals.d10p++; }
       }
-
-      // Jarayonda turgan rol (oxirgi jarayon nomi) kesimi — dinamik ustunlar.
-      var role = Utils.str(r.lastProcessName) || 'Aniqlanmagan';
-      roleSet[role] = true;
-      g.roles[role] = (g.roles[role] || 0) + 1;
-      totals.roles[role] = (totals.roles[role] || 0) + 1;
     }
 
     // Rol ustunlarini umumiy soni bo'yicha kamayuvchi tartibda (eng band rollar oldinda).
@@ -557,8 +558,15 @@ var Dashboard = (function () {
       return (totals.roles[b] || 0) - (totals.roles[a] || 0) || a.localeCompare(b);
     });
 
+    // Tartiblash: eng ko'p "yakunlash kerak" bo'lgan tuman oldinda; ish bo'lmasa,
+    // kelajak yuki bo'yicha (d-buketlar) ham hisobga olinadi.
     var list = Object.keys(byDistrict).map(function (k) { return byDistrict[k]; })
-      .sort(function (a, b) { return b.total - a.total || a.district.localeCompare(b.district); });
+      .sort(function (a, b) {
+        return b.total - a.total ||
+          (b.d1 + b.d2 + b.d3 + b.d4 + b.d5 + b.d6_10 + b.d10p) -
+          (a.d1 + a.d2 + a.d3 + a.d4 + a.d5 + a.d6_10 + a.d10p) ||
+          a.district.localeCompare(b.district);
+      });
 
     return { roleColumns: roleColumns, rows: list, totals: totals };
   }

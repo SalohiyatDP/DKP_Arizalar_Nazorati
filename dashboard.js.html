@@ -217,7 +217,7 @@ Dash._renderSummary = function (st) {
     '<th colspan="2" class="grp-red">Shundan muddati o\'tgan arizalar</th>' +
     '<th rowspan="2" class="grp-yellow">Bugun muddati tugaydigan</th>' +
     '<th colspan="2">Obyekt turi</th>' +
-    '<th colspan="' + (roles.length + 1) + '">Shundan jarayonda turgan rollar kesmida</th>' +
+    '<th colspan="' + roles.length + '">Shundan jarayonda turgan rollar kesmida</th>' +
     '<th colspan="' + Dash._dayCols.length + '" class="grp-red">Muddat buzilishini oldini olish tahlili (qolgan kun)</th>' +
     '</tr>';
   var g2 = '<tr>' +
@@ -225,7 +225,6 @@ Dash._renderSummary = function (st) {
     '<th class="cred">Registratsiya tomonidan o\'tgan</th>' +
     '<th>Turar</th><th>Noturar</th>' +
     roles.map(function (r) { return '<th class="rot"><span>' + esc(r) + '</span></th>'; }).join('') +
-    '<th>Yakunlangan</th>' +
     Dash._dayCols.map(function (d) { return '<th>' + esc(d.label) + '</th>'; }).join('') +
     '</tr>';
 
@@ -236,11 +235,10 @@ Dash._renderSummary = function (st) {
     tds += '<td><strong>' + n(g.total) + '</strong></td>';
     tds += '<td class="danger">' + n(g.expiredBranch) + '</td>';
     tds += '<td class="danger">' + n(g.expiredReg) + '</td>';
-    tds += '<td class="hl">' + n(g.dueActive) + '</td>';
+    tds += '<td class="hl">' + n(g.dueToday) + '</td>';
     tds += '<td>' + n(g.residential) + '</td>';
     tds += '<td>' + n(g.nonResidential) + '</td>';
     tds += roles.map(function (r) { return '<td>' + n((g.roles || {})[r] || 0) + '</td>'; }).join('');
-    tds += '<td class="ok">' + n(g.completed) + '</td>';
     tds += Dash._dayCols.map(function (d) { return '<td>' + n(g[d.key]) + '</td>'; }).join('');
     return '<tr' + (isTotal ? ' class="totals"' : '') + '>' + tds + '</tr>';
   }
@@ -260,13 +258,11 @@ Dash.exportSummary = function () {
     'Filial tomonida o\'tgan', 'Registratsiya tomonidan o\'tgan', 'Bugun muddati tugaydigan',
     'Turar', 'Noturar']
     .concat(roles)
-    .concat(['Yakunlangan'])
     .concat(Dash._dayCols.map(function (d) { return d.label + ' qolgan'; }));
   function rowArr(g, idx) {
-    return [idx, g.district, g.total, g.expiredBranch, g.expiredReg, g.dueActive,
+    return [idx, g.district, g.total, g.expiredBranch, g.expiredReg, g.dueToday,
       g.residential, g.nonResidential]
       .concat(roles.map(function (r) { return (g.roles || {})[r] || 0; }))
-      .concat([g.completed])
       .concat(Dash._dayCols.map(function (d) { return g[d.key]; }));
   }
   var aoa = [headers];
