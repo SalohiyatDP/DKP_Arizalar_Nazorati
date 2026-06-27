@@ -361,19 +361,21 @@ var Dashboard = (function () {
    */
   function getDashboard(user, rawFilters) {
     var filters = Validation.sanitizeFilters(rawFilters || {});
-    var rows = scopedRows(user, filters);
+    // Rol + aniq filtrlar bo'yicha barcha yozuvlar (kümülativ — moliya shundan hisoblanadi).
+    var roleRows = scopedRows(user, filters);
 
-    // Oylik standart ko'rinish: aniq davr (sana/yil/oy) tanlanmagan bo'lsa —
-    // joriy oy 1-sanasidan boshlab kelgan arizalar + oldingi oylardan o'tgan
-    // (jarayondagi arizalar va kutilayotgan/qisman to'lovlar).
+    // Arizalar ko'rsatkichlari uchun joriy oy ko'rinishi (aniq davr tanlanmagan bo'lsa).
+    var viewRows = roleRows;
     var period = 'Barcha davr';
     if (!filters.dateFrom && !filters.dateTo && !filters.year && !filters.month && !filters.search) {
-      rows = _currentMonthScope(rows);
+      viewRows = _currentMonthScope(roleRows);
       period = _currentPeriodLabel();
     }
 
-    var stats = Statistics.compute(rows);
-    var fin = Finance.compute(rows);
+    var stats = Statistics.compute(viewRows);   // arizalar holati — joriy oy
+    // MUHIM: moliya KÜMÜLATIV — to'lovlar oylar davomida to'planib boradi,
+    // shuning uchun oylik filtr qo'llanmaydi (aks holda eski to'lovlar 0 ko'rinardi).
+    var fin = Finance.compute(roleRows);
 
     return {
       generatedAt: Utils.formatDateTime(new Date()),
@@ -432,7 +434,7 @@ var Dashboard = (function () {
         byEngineer: fin.byEngineer.slice(0, 1000),
         byRegistrator: fin.byRegistrator.slice(0, 1000)
       },
-      recentActivities: _recentActivities(rows)
+      recentActivities: _recentActivities(viewRows)
     };
   }
 
