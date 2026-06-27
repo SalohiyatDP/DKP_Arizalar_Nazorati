@@ -20,6 +20,7 @@ var SHEETS = {
   HOLIDAYS: 'HOLIDAYS',
   SERVICE_RULES: 'SERVICE_RULES',
   AREA_RULES: 'AREA_RULES',
+  DEADLINE_RULES: 'MUDDAT_QOIDALARI',
   EXPORT: 'EXPORT',
   BACKUP: 'BACKUP',
   IMPORT_LOG: 'IMPORT_LOG',
@@ -49,7 +50,15 @@ var HISOBOT_FIELDS = {
   objectType:       ['Obyekt turi', 'OBYEKT TURI', 'OBJECT TYPE'],
   serviceCode:      ['Tranzaksiya turi', 'XIZMAT KODI', 'SERVICE CODE'],
   area:             ['Umumiy yer maydoni', 'MAYDON', 'AREA', 'YUZA'],
-  registerDate:     ['Ariza kelib tushgan sana', 'QABUL SANASI', 'KIRISH SANASI', 'ARIZA SANASI'],
+
+  // --- Muddat formulasi uchun qo'shimcha ustunlar (Excel: I,L,N,O,V,W) ---
+  // Har birida EXACT sarlavha BIRINCHI variant — mapper qisman moslikda
+  // boshqa maydon (objectType, area) tomonidan "o'g'irlanmasligi" uchun.
+  objectType2:        ['Obyekt turi 2'],                       // Excel L
+  priznak:            ['Priznak'],                             // Excel O
+  applicationSource:  ['Ariza manbasi'],                       // Excel N
+  cadastrePassportType: ['Kadastr passport olish turi'],       // Excel V
+  externalArea:       ['Tashqi o\'lchovlar bo\'yicha maydon', 'Tashqi o`lchovlar bo`yicha maydon'], // Excel W  registerDate:     ['Ariza kelib tushgan sana', 'QABUL SANASI', 'KIRISH SANASI', 'ARIZA SANASI'],
   deadlineDate:     ['IJRO MUDDATI', 'MUDDAT SANASI', 'DEADLINE'],
   completeDate:     ['Oxirgi jarayon sana', 'BAJARILGAN SANA', 'TUGATILGAN SANA'],
   issuedDate:       ['To\'lovga chiqarilgan sana', 'TO\'LOVGA CHIQARILGAN SANA'],
@@ -75,7 +84,8 @@ var HISOBOT_FIELDS = {
 var DATA_COLUMNS = [
   'rowId', 'applicationNo', 'transactionNo', 'cadastreNo', 'customer', 'pnfl', 'tin',
   'region', 'district', 'engineer', 'registrator', 'applicationType', 'objectType', 'serviceCode',
-  'residency', 'area', 'registerDate', 'deadlineDate', 'completeDate', 'issuedDate', 'status',
+  'objectType2', 'priznak', 'applicationSource', 'cadastrePassportType', 'externalArea',
+  'residency', 'area', 'registerDate', 'deadlineDate', 'deadlineDays', 'completeDate', 'issuedDate', 'status',
   'deadlineStatus', 'remainingDays', 'progressPercent', 'colorStatus', 'issued',
   'amount', 'paidAmount', 'debtAmount', 'paymentStatus', 'paymentDate', 'note',
   'year', 'month', 'importBatch', 'updatedAt'

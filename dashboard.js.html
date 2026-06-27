@@ -729,9 +729,107 @@ DeadlineUI.load = function () {
     App.progress(100);
     DeadlineUI._data = d;
     App._setText('dlDefaultDays', d.defaultDays);
+    DeadlineUI._renderConfig(d.deadlineConfig);
     DeadlineUI._renderRules(d.rules);
     DeadlineUI._renderHolidays(d.holidays);
   }).catch(function (e) { App.toast(e.message, 'error'); App.progress(0); });
+};
+
+/* ---- Muddat hisoblash formulasi (sozlanadigan qiymatlar) ---- */
+DeadlineUI._cfg = [];
+DeadlineUI._groupLabel = {
+  'manba': 'Ariza manbasi bo\'yicha',
+  'flag': 'Kadastr passport olish turi (bayroq)',
+  'ariza': 'Ariza turi bo\'yicha (aniq moslik)',
+  'turar': 'Turar obyekt / kompozit',
+  'noturar': 'Noturar obyekt / kompozit',
+  'umumiy': 'Umumiy foydalanishdagi ko\'chmas mulk',
+  'maydon': 'Maydon (m\u00b2) jadvali \u2014 noturar',
+  'default': 'Standart (qolgan barcha hollar)'
+};
+DeadlineUI._groupOrder = ['manba', 'flag', 'ariza', 'turar', 'noturar', 'umumiy', 'maydon', 'default'];
+
+DeadlineUI._groupOf = function (key) {
+  var i = key.indexOf(':');
+  return i === -1 ? key : key.substring(0, i);
+};
+
+DeadlineUI._renderConfig = function (list) {
+  DeadlineUI._cfg = list || [];
+  var wrap = document.getElementById('deadlineConfigWrap');
+  if (!wrap) return;
+  if (!DeadlineUI._cfg.length) {
+    wrap.innerHTML = '<div class="empty-state" style="padding:24px">Qoidalar yo\'q</div>';
+    return;
+  }
+  var groups = {};
+  DeadlineUI._cfg.forEach(function (it, idx) {
+    var g = DeadlineUI._groupOf(it.key);
+    (groups[g] = groups[g] || []).push({ it: it, idx: idx });
+  });
+  var html = '';
+  DeadlineUI._groupOrder.forEach(function (g) {
+    if (!groups[g]) return;
+    html += '<div style="margin-bottom:14px;">' +
+      '<div style="font-weight:600; margin:8px 0; color:var(--text-primary);">' +
+      esc(DeadlineUI._groupLabel[g] || g) + '</div>' +
+      '<table class="data-table"><tbody>';
+    groups[g].forEach(function (o) {
+      var it = o.it, i = o.idx;
+      var label = it.desc || it.key;
+      html += '<tr>' +
+        '<td style="width:58%">' + esc(label) +
+        '<div style="color:var(--text-secondary);font-size:11px">' + esc(it.key) + '</div></td>' +
+        '<td style="width:120px"><input type="number" class="input" id="dcVal_' + i +
+        '" value="' + it.value + '" min="0" max="365" style="width:90px"></td>' +
+        '<td><button class="btn-icon" title="Saqlash" onclick="DeadlineUI.saveParam(' + i +
+        ')"><span class="material-icons">save</span></button>' +
+        (it.fixed ? '' : '<button class="btn-icon" title="O\'chirish" onclick="DeadlineUI.deleteParam(' + i +
+          ')"><span class="material-icons" style="color:var(--md-danger)">delete</span></button>') +
+        '</td></tr>';
+    });
+    html += '</tbody></table></div>';
+  });
+  wrap.innerHTML = html;
+};
+
+DeadlineUI.saveParam = function (i) {
+  var it = DeadlineUI._cfg[i]; if (!it) return;
+  var v = document.getElementById('dcVal_' + i).value;
+  if (v === '') { App.toast('Kun sonini kiriting', 'warning'); return; }
+  api('apiSaveDeadlineParam', State.token, State.csrf, { key: it.key, value: v, desc: it.desc })
+    .then(function () { App.toast('Saqlandi', 'success'); DeadlineUI.load(); })
+    .catch(function (e) { App.toast(e.message, 'error'); });
+};
+
+DeadlineUI.deleteParam = function (i) {
+  var it = DeadlineUI._cfg[i]; if (!it) return;
+  if (!confirm('"' + it.key + '" qoidasini o\'chirasizmi?')) return;
+  api('apiDeleteDeadlineParam', State.token, State.csrf, it.key)
+    .then(function () { App.toast('O\'chirildi', 'success'); DeadlineUI.load(); })
+    .catch(function (e) { App.toast(e.message, 'error'); });
+};
+
+DeadlineUI.addParam = function () {
+  var g = document.getElementById('dcNewGroup').value;
+  var val = document.getElementById('dcNewValue').value.trim();
+  var days = document.getElementById('dcNewDays').value;
+  if (!val || days === '') { App.toast('Qiymat va kunni kiriting', 'warning'); return; }
+  var key = g + ':' + val;
+  api('apiSaveDeadlineParam', State.token, State.csrf, { key: key, value: days, desc: '' })
+    .then(function () {
+      App.toast('Qoida qo\'shildi', 'success');
+      document.getElementById('dcNewValue').value = '';
+      document.getElementById('dcNewDays').value = '';
+      DeadlineUI.load();
+    }).catch(function (e) { App.toast(e.message, 'error'); });
+};
+
+DeadlineUI.resetConfig = function () {
+  if (!confirm('Barcha muddat qoidalarini standart (Excel formulasi) holatiga qaytarasizmi?')) return;
+  api('apiResetDeadlineConfig', State.token, State.csrf)
+    .then(function () { App.toast('Standart holat tiklandi', 'success'); DeadlineUI.load(); })
+    .catch(function (e) { App.toast(e.message, 'error'); });
 };
 
 DeadlineUI._resLabel = function (v) {

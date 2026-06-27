@@ -226,13 +226,64 @@
   <div class="page-title">Ariza muddati</div>
   <div class="page-subtitle mb-16">Muddat qoidalari va bayram kunlarini boshqarish</div>
 
+  <!-- Muddat hisoblash formulasi (sozlanadigan) -->
+  <div class="card mb-16">
+    <div class="card-title"><span class="material-icons">functions</span> Muddat hisoblash qoidalari (formula)</div>
+    <p style="color:var(--text-secondary); font-size:13px; margin-bottom:12px;">
+      Ariza muddati (ish kuni) quyidagi <strong>ustuvor qoidalar</strong> bo'yicha avtomatik hisoblanadi
+      (yuqoridan pastga — birinchi mos kelgani ishlaydi). Faqat <strong>kun sonini</strong> o'zgartirasiz.
+      Qiymatlar <strong>MUDDAT_QOIDALARI</strong> varag'ida saqlanadi.</p>
+
+    <div id="deadlineConfigWrap"></div>
+
+    <div class="card-title" style="margin-top:18px; font-size:15px;">
+      <span class="material-icons">add_circle</span> Yangi aniq qoida qo'shish</div>
+    <p style="color:var(--text-secondary); font-size:12px; margin-bottom:8px;">
+      Ariza manbasi, ariza turi yoki "Kadastr passport olish turi" qiymatiga aniq mos keladigan qoida.</p>
+    <div class="filters-grid mb-8">
+      <div class="field" style="margin:0;"><label>Guruh</label>
+        <select class="select" id="dcNewGroup">
+          <option value="manba">Ariza manbasi</option>
+          <option value="ariza">Ariza turi</option>
+          <option value="flag">Kadastr passport olish turi</option>
+        </select></div>
+      <div class="field" style="margin:0;"><label>Qiymat (aniq matn)</label>
+        <input type="text" class="input" id="dcNewValue" placeholder="masalan: UZKAD"></div>
+      <div class="field" style="margin:0;"><label>Muddat (ish kuni)</label>
+        <input type="number" class="input" id="dcNewDays" min="0" max="365" placeholder="5"></div>
+      <div class="field" style="margin:0; align-self:end;">
+        <button class="btn btn-primary btn-block" onclick="DeadlineUI.addParam()">
+          <span class="material-icons">add</span> Qo'shish</button></div>
+    </div>
+    <button class="btn btn-ghost" onclick="DeadlineUI.resetConfig()">
+      <span class="material-icons">restart_alt</span> Standart qiymatlarga qaytarish</button>
+  </div>
+
   <div class="grid charts-grid">
-    <!-- Muddat qoidalari -->
+    <!-- Bayram kunlari -->
     <div class="card">
-      <div class="card-title"><span class="material-icons">rule</span> Muddat qoidalari (ish kuni)</div>
+      <div class="card-title"><span class="material-icons">event_busy</span> Bayram / dam olish kunlari</div>
       <p style="color:var(--text-secondary); font-size:13px; margin-bottom:12px;">
-        Har bir ariza turi uchun ijro muddati (ish kunlarida). Qoidaga mos kelmaganlar uchun
-        standart: <strong id="dlDefaultDays">10</strong> ish kuni.</p>
+        Bu kunlar ish kuni hisoblanmaydi (shanba/yakshanbadan tashqari).</p>
+      <div class="filters-grid mb-16">
+        <div class="field" style="margin:0;"><label>Sana</label>
+          <input type="date" class="input" id="holidayDate"></div>
+        <div class="field" style="margin:0;"><label>Nomi (ixtiyoriy)</label>
+          <input type="text" class="input" id="holidayName" placeholder="masalan: Navro'z"></div>
+        <div class="field" style="margin:0; align-self:end;">
+          <button class="btn btn-primary btn-block" onclick="DeadlineUI.addHoliday()">
+            <span class="material-icons">add</span> Qo'shish</button></div>
+      </div>
+      <div class="table-wrap"><table class="data-table" id="holidaysTable"></table></div>
+    </div>
+
+    <!-- Turar/Noturar klassifikatsiya (ixtiyoriy, ikkilamchi) -->
+    <div class="card">
+      <div class="card-title"><span class="material-icons">rule</span> Turar/Noturar klassifikatsiya qoidalari</div>
+      <p style="color:var(--text-secondary); font-size:13px; margin-bottom:12px;">
+        Ixtiyoriy: ariza turini Turar/Noturar joyga ajratish uchun. <strong>Muddat</strong> esa
+        yuqoridagi formula bo'yicha hisoblanadi. Qoidaga mos kelmaganlar uchun standart:
+        <strong id="dlDefaultDays">10</strong> ish kuni.</p>
       <div class="filters-grid mb-16">
         <div class="field" style="margin:0;"><label>Ariza turi</label>
           <input type="text" class="input" id="ruleName" placeholder="masalan: Kadastr"></div>
@@ -249,23 +300,6 @@
             <span class="material-icons">save</span> Saqlash</button></div>
       </div>
       <div class="table-wrap"><table class="data-table" id="rulesTable"></table></div>
-    </div>
-
-    <!-- Bayram kunlari -->
-    <div class="card">
-      <div class="card-title"><span class="material-icons">event_busy</span> Bayram / dam olish kunlari</div>
-      <p style="color:var(--text-secondary); font-size:13px; margin-bottom:12px;">
-        Bu kunlar ish kuni hisoblanmaydi (shanba/yakshanbadan tashqari).</p>
-      <div class="filters-grid mb-16">
-        <div class="field" style="margin:0;"><label>Sana</label>
-          <input type="date" class="input" id="holidayDate"></div>
-        <div class="field" style="margin:0;"><label>Nomi (ixtiyoriy)</label>
-          <input type="text" class="input" id="holidayName" placeholder="masalan: Navro'z"></div>
-        <div class="field" style="margin:0; align-self:end;">
-          <button class="btn btn-primary btn-block" onclick="DeadlineUI.addHoliday()">
-            <span class="material-icons">add</span> Qo'shish</button></div>
-      </div>
-      <div class="table-wrap"><table class="data-table" id="holidaysTable"></table></div>
     </div>
   </div>
 </section>
