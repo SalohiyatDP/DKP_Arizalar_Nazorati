@@ -67,14 +67,14 @@ var Reports = (function () {
       .sort(function (a, b) { return a.remainingDays - b.remainingDays; })
       .map(function (r) {
         return [
-          r.applicationNo || r.transactionNo || r.cadastreNo,
-          r.customer, r.engineer, r.district,
-          Utils.formatDate(r.deadlineDate),
+          r.transactionNo || r.applicationNo || r.cadastreNo,
+          r.district, r.engineer,
+          Utils.formatDate(r.registerDate),
           Math.abs(r.remainingDays) + ' kun'
         ];
       });
     return _report('Muddati o\'tgan arizalar',
-      ['Ariza', 'Mijoz', 'Muhandis', 'Tuman', 'Muddat', 'Kechikish'], data);
+      ['Tranzaksiya raqami', 'Tuman', 'Muhandis', 'Ariza kelgan sana', 'Kechikish muddati'], data);
   }
 
   /** Bugun tugaydigan arizalar hisoboti. */
@@ -83,12 +83,14 @@ var Reports = (function () {
       .filter(function (r) { return r.deadlineStatus === DEADLINE_STATUS.DUE_TODAY; })
       .map(function (r) {
         return [
-          r.applicationNo || r.transactionNo || r.cadastreNo,
-          r.customer, r.engineer, r.district, Utils.formatDate(r.deadlineDate)
+          r.transactionNo || r.applicationNo || r.cadastreNo,
+          r.district, r.engineer,
+          Utils.formatDate(r.registerDate),
+          'Bugun'
         ];
       });
     return _report('Bugun tugaydigan arizalar',
-      ['Ariza', 'Mijoz', 'Muhandis', 'Tuman', 'Muddat'], data);
+      ['Tranzaksiya raqami', 'Tuman', 'Muhandis', 'Ariza kelgan sana', 'Kechikish muddati'], data);
   }
 
   /** Guruh (muhandis/tuman/viloyat) bo'yicha hisobot. */

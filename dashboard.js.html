@@ -177,29 +177,62 @@ Apps.init = function () {
 };
 
 Apps._renderFilters = function (o) {
-  function sel(id, label, items, valKey, labKey) {
+  Apps._opts = o;
+  function opt(v, l, sel) { return '<option value="' + esc(v) + '"' + (sel ? ' selected' : '') + '>' + esc(l) + '</option>'; }
+  function selBox(id, label, items, valKey, labKey, onchange) {
     var opts = '<option value="">' + label + ' (barchasi)</option>';
     items.forEach(function (it) {
       var v = valKey ? it[valKey] : it;
       var l = labKey ? it[labKey] : it;
-      opts += '<option value="' + esc(v) + '">' + esc(l) + '</option>';
+      opts += opt(v, l);
     });
     return '<div class="field" style="margin:0;"><label>' + label +
-      '</label><select class="select" id="' + id + '">' + opts + '</select></div>';
+      '</label><select class="select" id="' + id + '"' +
+      (onchange ? ' onchange="' + onchange + '"' : '') + '>' + opts + '</select></div>';
   }
   var html = '';
-  html += sel('fRegion', 'Viloyat', o.regions);
-  html += sel('fDistrict', 'Tuman', o.districts, 'name', 'name');
-  html += sel('fEngineer', 'Muhandis', o.engineers, 'name', 'name');
-  html += sel('fType', 'Ariza turi', o.applicationTypes);
-  html += sel('fResidency', 'Turar/Noturar', o.residencies, 'value', 'label');
-  html += sel('fDeadline', 'Muddat holati', o.deadlineStatuses, 'value', 'label');
-  html += sel('fPayment', 'To\'lov holati', o.paymentStatuses, 'value', 'label');
-  html += sel('fYear', 'Yil', o.years);
+  html += selBox('fRegion', 'Viloyat', o.regions, null, null, 'Apps.onRegionChange()');
+  html += selBox('fDistrict', 'Tuman', o.districts, 'name', 'name', 'Apps.onDistrictChange()');
+  html += selBox('fEngineer', 'Muhandis', o.engineers, 'name', 'name');
+  html += selBox('fType', 'Ariza turi', o.applicationTypes);
+  html += selBox('fResidency', 'Turar/Noturar', o.residencies, 'value', 'label');
+  html += selBox('fDeadline', 'Muddat holati', o.deadlineStatuses, 'value', 'label');
+  html += selBox('fPayment', 'To\'lov holati', o.paymentStatuses, 'value', 'label');
+  html += selBox('fYear', 'Yil', o.years);
   html += '<div class="field" style="margin:0;"><label>Sana (dan)</label><input type="date" class="input" id="fDateFrom"></div>';
   html += '<div class="field" style="margin:0;"><label>Sana (gacha)</label><input type="date" class="input" id="fDateTo"></div>';
   html += '<div class="field" style="margin:0;"><label>Kadastr / Mijoz</label><input type="text" class="input" id="fSearch" placeholder="Qidirish..."></div>';
   document.getElementById('filtersContainer').innerHTML = html;
+};
+
+/** Viloyat o'zgarsa — tuman va muhandis ro'yxatlarini shu viloyatga moslaydi. */
+Apps.onRegionChange = function () {
+  var region = document.getElementById('fRegion').value;
+  var o = Apps._opts;
+  var dSel = document.getElementById('fDistrict');
+  var districts = o.districts.filter(function (d) { return !region || d.region === region; });
+  dSel.innerHTML = '<option value="">Tuman (barchasi)</option>' +
+    districts.map(function (d) { return '<option value="' + esc(d.name) + '">' + esc(d.name) + '</option>'; }).join('');
+  Apps.onDistrictChange();
+};
+
+/** Tuman o'zgarsa — muhandislar ro'yxatini shu tumanga moslaydi. */
+Apps.onDistrictChange = function () {
+  var district = document.getElementById('fDistrict').value;
+  var region = document.getElementById('fRegion').value;
+  var o = Apps._opts;
+  var eSel = document.getElementById('fEngineer');
+  var engs = o.engineers.filter(function (e) {
+    if (district) return e.district === district;
+    if (region) {
+      // viloyat tanlangan, tuman yo'q — shu viloyatdagi tumanlarning muhandislari
+      var dn = o.districts.filter(function (d) { return d.region === region; }).map(function (d) { return d.name; });
+      return dn.indexOf(e.district) !== -1;
+    }
+    return true;
+  });
+  eSel.innerHTML = '<option value="">Muhandis (barchasi)</option>' +
+    engs.map(function (e) { return '<option value="' + esc(e.name) + '">' + esc(e.name) + '</option>'; }).join('');
 };
 
 Apps._collectFilters = function () {
@@ -353,7 +386,7 @@ FinanceUI.load = function () {
         '<span class="material-icons">' + c.icon + '</span></div><div><div class="value" style="font-size:18px">' +
         esc(c.value) + '</div><div class="label">' + esc(c.label) + '</div></div></div>';
     }).join('');
-    FinanceUI._renderRegionTable(d.finance.byRegion);
+    FinanceUI._renderRegionTable(d.finance.byDistrict || d.finance.byRegion);
     ChartsReady.then(function () { FinanceUI._drawChart(); });
   }).catch(function (e) { App.toast(e.message, 'error'); App.progress(0); });
 };
@@ -371,11 +404,12 @@ FinanceUI._drawChart = function () {
 FinanceUI._renderRegionTable = function (list) {
   var t = document.getElementById('financeRegionTable');
   if (!list || !list.length) { t.innerHTML = '<tbody><tr><td>Ma\'lumot yo\'q</td></tr></tbody>'; return; }
-  t.innerHTML = '<thead><tr><th>Viloyat</th><th>Arizalar</th><th>To\'langan</th><th>Qarz</th><th>%</th></tr></thead><tbody>' +
+  t.innerHTML = '<thead><tr><th>Tuman</th><th>Arizalar</th><th>To\'langan</th>' +
+    '<th>To\'lov kutilmoqda</th></tr></thead><tbody>' +
     list.map(function (g) {
       return '<tr><td>' + esc(g.name) + '</td><td>' + g.count + '</td><td>' +
-        Number(g.paid).toLocaleString('ru-RU') + '</td><td>' + Number(g.debt).toLocaleString('ru-RU') +
-        '</td><td>' + g.collectionRate + '%</td></tr>';
+        Number(g.paid).toLocaleString('ru-RU') + '</td><td>' +
+        Number(g.debt).toLocaleString('ru-RU') + '</td></tr>';
     }).join('') + '</tbody>';
 };
 
@@ -385,7 +419,6 @@ RankingsUI.load = function () {
   api('apiGetDashboard', State.token, {}).then(function (d) {
     RankingsUI._table('rankEngineers', d.rankings.engineers, 'Muhandis');
     RankingsUI._table('rankDistricts', d.rankings.districts, 'Tuman');
-    RankingsUI._table('rankRegions', d.rankings.regions, 'Viloyat');
   }).catch(function (e) { App.toast(e.message, 'error'); });
 };
 RankingsUI._table = function (id, list, label) {
@@ -401,10 +434,44 @@ RankingsUI._table = function (id, list, label) {
 
 /* ============================ HISOBOTLAR ============================= */
 var ReportsUI = {};
+ReportsUI._inited = false;
+
+ReportsUI.init = function () {
+  if (ReportsUI._inited) return;
+  function fill(opts) {
+    var dSel = document.getElementById('reportDistrict');
+    var eSel = document.getElementById('reportEngineer');
+    if (dSel) dSel.innerHTML = '<option value="">Tuman (barchasi)</option>' +
+      opts.districts.map(function (d) { return '<option value="' + esc(d.name) + '">' + esc(d.name) + '</option>'; }).join('');
+    if (eSel) eSel.innerHTML = '<option value="">Muhandis (barchasi)</option>' +
+      opts.engineers.map(function (e) { return '<option value="' + esc(e.name) + '">' + esc(e.name) + '</option>'; }).join('');
+    ReportsUI._opts = opts;
+    if (dSel) dSel.onchange = ReportsUI._onDistrict;
+  }
+  if (State.filterOptions) { fill(State.filterOptions); ReportsUI._inited = true; }
+  else {
+    api('apiFilterOptions', State.token).then(function (opts) {
+      State.filterOptions = opts; fill(opts); ReportsUI._inited = true;
+    }).catch(function (e) { App.toast(e.message, 'error'); });
+  }
+};
+
+ReportsUI._onDistrict = function () {
+  var d = document.getElementById('reportDistrict').value;
+  var eSel = document.getElementById('reportEngineer');
+  var engs = ReportsUI._opts.engineers.filter(function (e) { return !d || e.district === d; });
+  eSel.innerHTML = '<option value="">Muhandis (barchasi)</option>' +
+    engs.map(function (e) { return '<option value="' + esc(e.name) + '">' + esc(e.name) + '</option>'; }).join('');
+};
+
 ReportsUI.load = function () {
   var type = document.getElementById('reportType').value;
+  var filters = {
+    district: (document.getElementById('reportDistrict') || {}).value || '',
+    engineer: (document.getElementById('reportEngineer') || {}).value || ''
+  };
   App.progress(30);
-  api('apiGetReport', State.token, type, {}).then(function (rep) {
+  api('apiGetReport', State.token, type, filters).then(function (rep) {
     App.progress(100);
     App._setText('reportTitle', rep.title + ' (' + rep.total + ')');
     var t = document.getElementById('reportTable');

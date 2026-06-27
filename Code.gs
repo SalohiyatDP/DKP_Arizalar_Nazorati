@@ -70,11 +70,19 @@ function _safePage(page) {
 
 /**
  * Standart muvaffaqiyatli javob.
+ * Ma'lumot JSON orqali tozalanadi — bu google.script.run serializatsiya
+ * muammolarini (masalan, varaqdagi Date obyektlari sababli null qaytarish) oldini oladi.
  * @param {*} data
  * @returns {Object}
  */
 function _ok(data) {
-  return { ok: true, data: data === undefined ? null : data };
+  var safe;
+  try {
+    safe = JSON.parse(JSON.stringify(data === undefined ? null : data));
+  } catch (e) {
+    safe = null;
+  }
+  return { ok: true, data: safe };
 }
 
 /**

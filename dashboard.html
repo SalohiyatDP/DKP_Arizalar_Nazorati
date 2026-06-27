@@ -70,7 +70,7 @@
   <div class="grid charts-grid">
     <div class="card"><div class="card-title"><span class="material-icons">bar_chart</span> Oylik daromad</div>
       <div id="chartFinanceMonthly" class="chart-canvas"></div></div>
-    <div class="card"><div class="card-title"><span class="material-icons">map</span> Viloyatlar bo'yicha</div>
+    <div class="card"><div class="card-title"><span class="material-icons">map</span> Tumanlar bo'yicha</div>
       <div class="table-wrap"><table class="data-table" id="financeRegionTable"></table></div></div>
   </div>
 </section>
@@ -96,6 +96,14 @@
           <option value="payment">To'lov hisoboti</option>
         </select>
       </div>
+      <div class="field" style="margin:0;">
+        <label>Tuman</label>
+        <select class="select" id="reportDistrict"><option value="">Barchasi</option></select>
+      </div>
+      <div class="field" style="margin:0;">
+        <label>Muhandis</label>
+        <select class="select" id="reportEngineer"><option value="">Barchasi</option></select>
+      </div>
       <div class="field" style="margin:0; align-self:end;">
         <button class="btn btn-primary btn-block" onclick="ReportsUI.load()">
           <span class="material-icons">assessment</span> Hisobotni ko'rish</button>
@@ -118,8 +126,6 @@
       <div class="table-wrap"><table class="data-table" id="rankEngineers"></table></div></div>
     <div class="card"><div class="card-title"><span class="material-icons">location_city</span> Tumanlar</div>
       <div class="table-wrap"><table class="data-table" id="rankDistricts"></table></div></div>
-    <div class="card"><div class="card-title"><span class="material-icons">public</span> Viloyatlar</div>
-      <div class="table-wrap"><table class="data-table" id="rankRegions"></table></div></div>
   </div>
 </section>
 

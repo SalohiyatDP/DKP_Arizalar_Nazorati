@@ -355,6 +355,9 @@ var BusinessLogic = (function () {
       Utils.toNumber(raw.paidReg) + Utils.toNumber(raw.paidAddr);
     rec.amount = amountSum > 0 ? amountSum : Utils.toNumber(raw.amount);
     rec.paidAmount = paidSum > 0 ? paidSum : Utils.toNumber(raw.paidAmount);
+    // computePayment yig'ilgan summalardan foydalanishi uchun raw'ga ham yozamiz.
+    raw.amount = rec.amount;
+    raw.paidAmount = rec.paidAmount;
     raw.paymentStatusRaw = raw.paymentStatus;
     var pay = computePayment(raw);
     rec.paymentStatus = pay.paymentStatus;

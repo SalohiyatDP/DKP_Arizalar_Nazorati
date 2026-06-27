@@ -381,7 +381,8 @@ var Dashboard = (function () {
       finance: {
         comparison: fin.comparison,
         monthly: fin.monthly,
-        byRegion: fin.byRegion.slice(0, 20)
+        byRegion: fin.byRegion.slice(0, 20),
+        byDistrict: fin.byDistrict.slice(0, 200)
       },
       recentActivities: _recentActivities(rows)
     };
