@@ -209,17 +209,20 @@ Dash._renderSummary = function (st) {
   var roles = st.roleColumns || [];
   function n(v) { return v ? v : ''; }   // 0 ni bo'sh ko'rsatamiz (Excel uslubi)
 
-  // --- Guruhli sarlavha (2 qator) ---
+  // --- Guruhli sarlavha (2 qator, rowspan/colspan) ---
   var g1 = '<tr class="grp">' +
-    '<th colspan="2"></th>' +
-    '<th colspan="3">Asosiy ko\'rsatkichlar</th>' +
+    '<th rowspan="2">№</th>' +
+    '<th rowspan="2" class="ltxt">Hududlar</th>' +
+    '<th rowspan="2">Jami yakunlash kerak</th>' +
+    '<th colspan="2" class="grp-red">Shundan muddati o\'tgan arizalar</th>' +
+    '<th rowspan="2" class="grp-yellow">Bugun muddati tugaydigan</th>' +
     '<th colspan="2">Obyekt turi</th>' +
     '<th colspan="' + (roles.length + 1) + '">Shundan jarayonda turgan rollar kesmida</th>' +
-    '<th colspan="' + Dash._dayCols.length + '">Muddat buzilishini oldini olish tahlili (qolgan kun)</th>' +
+    '<th colspan="' + Dash._dayCols.length + '" class="grp-red">Muddat buzilishini oldini olish tahlili (qolgan kun)</th>' +
     '</tr>';
   var g2 = '<tr>' +
-    '<th>№</th><th class="ltxt">Hudud</th>' +
-    '<th>Jami</th><th>Muddati o\'tgan</th><th>Bugun tugaydi</th>' +
+    '<th class="cred">Filial tomonida o\'tgan</th>' +
+    '<th class="cred">Registratsiya tomonidan o\'tgan</th>' +
     '<th>Turar</th><th>Noturar</th>' +
     roles.map(function (r) { return '<th class="rot"><span>' + esc(r) + '</span></th>'; }).join('') +
     '<th>Yakunlangan</th>' +
@@ -231,8 +234,9 @@ Dash._renderSummary = function (st) {
     tds += '<td>' + (isTotal ? '' : idx) + '</td>';
     tds += '<td class="ltxt"><strong>' + esc(g.district) + '</strong></td>';
     tds += '<td><strong>' + n(g.total) + '</strong></td>';
-    tds += '<td class="danger">' + n(g.expired) + '</td>';
-    tds += '<td class="warn">' + n(g.dueToday) + '</td>';
+    tds += '<td class="danger">' + n(g.expiredBranch) + '</td>';
+    tds += '<td class="danger">' + n(g.expiredReg) + '</td>';
+    tds += '<td class="hl">' + n(g.dueActive) + '</td>';
     tds += '<td>' + n(g.residential) + '</td>';
     tds += '<td>' + n(g.nonResidential) + '</td>';
     tds += roles.map(function (r) { return '<td>' + n((g.roles || {})[r] || 0) + '</td>'; }).join('');
@@ -252,18 +256,22 @@ Dash.exportSummary = function () {
   var st = Dash._summary;
   if (!st || !st.rows || !st.rows.length) { App.toast('Eksport uchun ma\'lumot yo\'q', 'warning'); return; }
   var roles = st.roleColumns || [];
-  var headers = ['№', 'Hudud', 'Jami (jarayonda)', 'Muddati o\'tgan', 'Bugun tugaydi', 'Turar', 'Noturar']
+  var headers = ['№', 'Hududlar', 'Jami yakunlash kerak',
+    'Filial tomonida o\'tgan', 'Registratsiya tomonidan o\'tgan', 'Bugun muddati tugaydigan',
+    'Turar', 'Noturar']
     .concat(roles)
     .concat(['Yakunlangan'])
     .concat(Dash._dayCols.map(function (d) { return d.label + ' qolgan'; }));
   function rowArr(g, idx) {
-    return [idx, g.district, g.total, g.expired, g.dueToday, g.residential, g.nonResidential]
+    return [idx, g.district, g.total, g.expiredBranch, g.expiredReg, g.dueActive,
+      g.residential, g.nonResidential]
       .concat(roles.map(function (r) { return (g.roles || {})[r] || 0; }))
       .concat([g.completed])
       .concat(Dash._dayCols.map(function (d) { return g[d.key]; }));
   }
-  var aoa = [headers, rowArr(st.totals, '').map(function (v, i) { return i === 0 ? 'JAMI' : v; })];
-  aoa[1][1] = st.totals.district;
+  var aoa = [headers];
+  var totRow = rowArr(st.totals, 'JAMI'); totRow[1] = st.totals.district;
+  aoa.push(totRow);
   st.rows.forEach(function (g, i) { aoa.push(rowArr(g, i + 1)); });
 
   var name = 'tumanlar_svod_' + (new Date()).toISOString().slice(0, 19).replace(/[:T]/g, '');

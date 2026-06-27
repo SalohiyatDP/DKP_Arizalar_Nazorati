@@ -486,17 +486,21 @@ var Dashboard = (function () {
    * Tuman kesimidagi SVOD jadvali (boshqaruv paneli ostida ko'rsatiladi).
    * FAQAT ochiq (yakunlanmagan) arizalar bo'yicha hisoblanadi — chunki ular
    * oylar bo'ylab o'tib boradi (kümülativ ish hajmi).
-   *   - Jami (jarayonda), Muddati o'tgan, Bugun tugaydi
-   *   - Turar / Noturar (obyekt turi)
-   *   - Jarayonda turgan rollar kesmida (lastProcessName bo'yicha dinamik ustunlar)
-   *   - Muddat buzilishini oldini olish tahlili: 1..5, 6-10, >10 kun qolgan
+   *
+   * Excel mantig'i (tasdiqlangan):
+   *   Jami yakunlash kerak = Bugun muddati tugaydigan + Muddati o'tgan
+   *   Muddati o'tgan = Filial tomonida o'tgan + Registratsiya tomonidan o'tgan
+   *   Turar + Noturar = Jami
+   * Ya'ni "Bugun muddati tugaydigan" = muddati hali o'tmagan ochiq arizalar.
+   *
    * @param {Array<Object>} rows  Rol bo'yicha cheklangan (butun davr) yozuvlar
    * @returns {{roleColumns: Array<string>, rows: Array<Object>, totals: Object}}
    */
   function _buildSummaryTable(rows) {
     function blank(name) {
       return {
-        district: name, total: 0, expired: 0, dueToday: 0,
+        district: name, total: 0,
+        expiredBranch: 0, expiredReg: 0, dueActive: 0,
         residential: 0, nonResidential: 0, completed: 0, roles: {},
         d1: 0, d2: 0, d3: 0, d4: 0, d5: 0, d6_10: 0, d10p: 0
       };
@@ -524,11 +528,13 @@ var Dashboard = (function () {
       else if (r.residency === RESIDENCY.NON_RESIDENTIAL) { g.nonResidential++; totals.nonResidential++; }
 
       if (r.deadlineStatus === DEADLINE_STATUS.EXPIRED) {
-        g.expired++; totals.expired++;
-      } else if (r.deadlineStatus === DEADLINE_STATUS.DUE_TODAY) {
-        g.dueToday++; totals.dueToday++;
+        // Muddati o'tgan — joriy bosqichga qarab Filial yoki Registratsiya tomonida.
+        if (_isRegistrationStage(r)) { g.expiredReg++; totals.expiredReg++; }
+        else { g.expiredBranch++; totals.expiredBranch++; }
       } else {
-        // Muddat buzilishigacha qolgan kunlar (faqat hali muddati kelmaganlar).
+        // Muddati hali o'tmagan ochiq arizalar ("Bugun muddati tugaydigan").
+        g.dueActive++; totals.dueActive++;
+        // Muddat buzilishigacha qolgan kunlar (faqat oldinda turganlar).
         var rem = Utils.toNumber(r.remainingDays);
         if (rem === 1) { g.d1++; totals.d1++; }
         else if (rem === 2) { g.d2++; totals.d2++; }
@@ -555,6 +561,24 @@ var Dashboard = (function () {
       .sort(function (a, b) { return b.total - a.total || a.district.localeCompare(b.district); });
 
     return { roleColumns: roleColumns, rows: list, totals: totals };
+  }
+
+  /**
+   * Ariza joriy bosqichda REGISTRATSIYA tomonidami (aks holda filial tomonida)?
+   * Oxirgi jarayon nomi / roli bo'yicha kalit so'zlar orqali aniqlanadi
+   * (lotin va kirill variantlari). Heuristika — kerak bo'lsa sozlanadi.
+   * @param {Object} r
+   * @returns {boolean}
+   */
+  function _isRegistrationStage(r) {
+    var s = Utils.normalize(Utils.str(r.lastProcessName) + ' ' + Utils.str(r.lastProcessRole));
+    s = s.replace(/['\u02bb\u02bc`\u2019\u2018]/g, '');   // apostroflarni olib tashlash
+    var keys = ['регистр', 'руйхат', 'рўйхат', 'ройхат', 'утказувч', 'ўтказувч',
+      'registr', 'royxat', 'otkazuvch'];
+    for (var i = 0; i < keys.length; i++) {
+      if (s.indexOf(keys[i]) !== -1) return true;
+    }
+    return false;
   }
 
   /**
