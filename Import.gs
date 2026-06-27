@@ -88,20 +88,28 @@ var Import = (function () {
           report.totalRows);
       }
 
-      // 3. VALIDATE
+      // 3. VALIDATE (yumshoq rejim — qatorlar rad etilmaydi, faqat ogohlantiriladi)
       _step(report, 'Validate', 'RUNNING');
       var mapping = Repository.hisobotHeaderMapper(parsed.headers);
       var headerCheck = Validation.validateImportHeaders(mapping);
-      if (!headerCheck.ok) {
-        throw new Error('Sarlavha tekshiruvi muvaffaqiyatsiz: ' +
-          headerCheck.errors.join('; '));
+      if (!headerCheck.ok && report.warnings.length < 50) {
+        report.warnings.push('Sarlavha ogohlantirishi: ' + headerCheck.errors.join('; '));
       }
-      var validRows = [];
+      // Diagnostika: qaysi ustun qaysi maydonga bog'landi.
+      report.detectedColumns = [];
+      report.unmappedHeaders = [];
+      for (var hc = 0; hc < parsed.headers.length; hc++) {
+        if (mapping[hc]) {
+          report.detectedColumns.push(Utils.str(parsed.headers[hc]) + ' → ' + mapping[hc]);
+        } else if (Utils.str(parsed.headers[hc])) {
+          report.unmappedHeaders.push(Utils.str(parsed.headers[hc]));
+        }
+      }
+      // Barcha bo'sh bo'lmagan qatorlarni saqlaymiz — ma'lumot yo'qolmasin.
+      var validRows = parsed.rows;
       for (var i = 0; i < parsed.rows.length; i++) {
         var check = Validation.validateImportRow(parsed.rows[i]);
-        if (check.ok) {
-          validRows.push(parsed.rows[i]);
-        } else {
+        if (!check.ok) {
           report.invalidRows++;
           if (report.warnings.length < 50) {
             report.warnings.push('Qator ' + parsed.rows[i]._row + ': ' +
@@ -111,7 +119,7 @@ var Import = (function () {
       }
       report.validRows = validRows.length;
       _step(report, 'Validate', 'OK',
-        report.validRows + ' yaroqli, ' + report.invalidRows + ' yaroqsiz');
+        report.validRows + ' qator import qilinadi (' + report.invalidRows + ' ogohlantirish)');
 
       // 4 + 5. TRANSFORM + BUSINESS LOGIC
       _step(report, 'Transform', 'RUNNING');

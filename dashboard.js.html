@@ -512,12 +512,28 @@ ImportUI._showProgress = function (startPct) {
 ImportUI._renderReport = function (rep) {
   document.getElementById('importBar').style.width = '100%';
   App.progress(100);
+  var html = '';
   var steps = (rep.steps || []).map(function (s) {
     var color = s.status === 'OK' ? 'var(--md-success)' : s.status === 'ERROR' ? 'var(--md-danger)' : 'var(--text-secondary)';
     return '<div style="color:' + color + '">• ' + esc(s.name) + ': ' + esc(s.status) +
       (s.detail ? ' — ' + esc(s.detail) : '') + '</div>';
   }).join('');
-  document.getElementById('importSteps').innerHTML = steps;
+  html += steps;
+
+  if (rep.detectedColumns && rep.detectedColumns.length) {
+    html += '<div style="margin-top:10px"><strong>Tanilgan ustunlar (' +
+      rep.detectedColumns.length + '):</strong><br><small style="color:var(--text-secondary)">' +
+      rep.detectedColumns.map(esc).join(' · ') + '</small></div>';
+  }
+  if (rep.unmappedHeaders && rep.unmappedHeaders.length) {
+    html += '<div style="margin-top:8px"><small style="color:var(--text-disabled)">Ishlatilmagan ustunlar: ' +
+      rep.unmappedHeaders.length + ' ta</small></div>';
+  }
+  if (rep.warnings && rep.warnings.length) {
+    html += '<div style="margin-top:8px; color:var(--md-warning)"><strong>Ogohlantirishlar:</strong><br><small>' +
+      rep.warnings.slice(0, 10).map(esc).join('<br>') + '</small></div>';
+  }
+  document.getElementById('importSteps').innerHTML = html;
 };
 
 

@@ -348,9 +348,13 @@ var BusinessLogic = (function () {
     rec.slaPercent = computeSla(raw, today);
     rec.progressPercent = computeProgress(raw, today);
 
-    // Moliya.
-    rec.amount = Utils.toNumber(raw.amount);
-    rec.paidAmount = Utils.toNumber(raw.paidAmount);
+    // Moliya — to'lov uchta qismdan iborat (Kadastr + Registratsiya + Manzil).
+    var amountSum = Utils.toNumber(raw.amountCadastre) +
+      Utils.toNumber(raw.amountReg) + Utils.toNumber(raw.amountAddr);
+    var paidSum = Utils.toNumber(raw.paidCadastre) +
+      Utils.toNumber(raw.paidReg) + Utils.toNumber(raw.paidAddr);
+    rec.amount = amountSum > 0 ? amountSum : Utils.toNumber(raw.amount);
+    rec.paidAmount = paidSum > 0 ? paidSum : Utils.toNumber(raw.paidAmount);
     raw.paymentStatusRaw = raw.paymentStatus;
     var pay = computePayment(raw);
     rec.paymentStatus = pay.paymentStatus;

@@ -230,19 +230,45 @@ var Repository = (function () {
 
   /**
    * HISOBOT sarlavhalarini logik kalitlarga moslashtiruvchi mapper.
+   * Avval to'liq moslik, topilmasa qisman (contains) moslik qo'llanadi.
    * @param {Array<string>} headers
    * @returns {Object<number,string>} {ustunIndeksi: logikKalit}
    */
   function hisobotHeaderMapper(headers) {
     var map = {};
+    var used = {}; // bir ustun ikki marta ishlatilmasin
     var normHeaders = headers.map(function (h) { return Utils.normalize(h); });
+
+    // 1-bosqich: to'liq (aniq) moslik.
     for (var key in HISOBOT_FIELDS) {
       if (!HISOBOT_FIELDS.hasOwnProperty(key)) continue;
       var variants = HISOBOT_FIELDS[key];
       for (var v = 0; v < variants.length; v++) {
         var target = Utils.normalize(variants[v]);
         var idx = normHeaders.indexOf(target);
-        if (idx !== -1) { map[idx] = key; break; }
+        if (idx !== -1 && !used[idx]) { map[idx] = key; used[idx] = true; break; }
+      }
+    }
+
+    // 2-bosqich: qisman moslik (sarlavha varianti ichida bormi yoki aksincha).
+    for (var key2 in HISOBOT_FIELDS) {
+      if (!HISOBOT_FIELDS.hasOwnProperty(key2)) continue;
+      // Bu kalit allaqachon biriktirilganmi?
+      var already = false;
+      for (var mk in map) { if (map[mk] === key2) { already = true; break; } }
+      if (already) continue;
+
+      var vars2 = HISOBOT_FIELDS[key2];
+      for (var c = 0; c < normHeaders.length; c++) {
+        if (used[c] || !normHeaders[c]) continue;
+        for (var w = 0; w < vars2.length; w++) {
+          var t = Utils.normalize(vars2[w]);
+          if (!t) continue;
+          if (normHeaders[c].indexOf(t) !== -1 || t.indexOf(normHeaders[c]) !== -1) {
+            map[c] = key2; used[c] = true; break;
+          }
+        }
+        if (used[c] && map[c] === key2) break;
       }
     }
     return map;

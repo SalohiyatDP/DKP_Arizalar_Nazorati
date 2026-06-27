@@ -30,34 +30,43 @@ var SHEETS = {
 };
 
 /**
- * HISOBOT varag'ining standart ustunlari (logik kalit -> sarlavha varianti).
- * Import vaqtida sarlavhalar avtomatik moslashtiriladi (mapping), shuning uchun
- * har bir logik maydon uchun bir nechta mumkin bo'lgan sarlavha nomi beriladi.
+ * HISOBOT varag'ining standart ustunlari (logik kalit -> sarlavha variantlari).
+ * Birinchi variant — DKP standart hisobotidagi aniq nom. Import vaqtida avval
+ * to'liq, so'ng qisman moslik bo'yicha avtomatik moslashtiriladi.
  */
 var HISOBOT_FIELDS = {
-  rowId:            ['ID', 'ROW_ID', 'Q/R', 'T/R', '№'],
-  applicationNo:    ['ARIZA RAQAMI', 'ARIZA_RAQAMI', 'APPLICATION NUMBER', 'ARIZA №'],
-  transactionNo:    ['TRANZAKSIYA RAQAMI', 'TRANZAKSIYA', 'TRANSACTION NUMBER', 'BITIM RAQAMI'],
-  cadastreNo:       ['KADASTR RAQAMI', 'KADASTR', 'CADASTRE NUMBER', 'KADASTR №'],
-  customer:         ['MIJOZ', 'ARIZACHI', 'CUSTOMER', 'F.I.O', 'FIO'],
-  pnfl:             ['JSHSHIR', 'PNFL', 'PINFL'],
+  applicationNo:    ['Ariza raqami', 'ARIZA RAQAMI', 'APPLICATION NUMBER'],
+  transactionNo:    ['Tranzaksiya raqami', 'TRANZAKSIYA RAQAMI', 'TRANSACTION NUMBER'],
+  cadastreNo:       ['Kadastr raqami', 'KADASTR RAQAMI', 'CADASTRE NUMBER'],
+  customer:         ['Buyurtmachi', 'Mulkdor', 'MIJOZ', 'ARIZACHI', 'CUSTOMER'],
+  pnfl:             ['PNFL', 'JSHSHIR', 'PINFL'],
   tin:              ['STIR', 'INN', 'TIN'],
-  region:           ['VILOYAT', 'REGION', 'HUDUD'],
-  district:         ['TUMAN', 'DISTRICT', 'SHAHAR'],
-  engineer:         ['MUHANDIS', 'ENGINEER', 'KADASTR MUHANDISI', 'IJROCHI'],
-  applicationType:  ['ARIZA TURI', 'ARIZA_TURI', 'APPLICATION TYPE', 'XIZMAT TURI'],
-  objectType:       ['OBYEKT TURI', 'OBYEKT_TURI', 'OBJECT TYPE', 'OBYEKT'],
-  serviceCode:      ['XIZMAT KODI', 'SERVICE CODE', 'KOD'],
-  area:             ['MAYDON', 'AREA', 'YUZA'],
-  registerDate:     ['QABUL SANASI', 'KIRISH SANASI', 'REGISTER DATE', 'SANA', 'ARIZA SANASI'],
-  deadlineDate:     ['MUDDAT', 'DEADLINE', 'IJRO MUDDATI', 'MUDDAT SANASI'],
-  completeDate:     ['BAJARILGAN SANA', 'TUGATILGAN SANA', 'COMPLETE DATE', 'IJRO SANASI'],
-  status:           ['HOLAT', 'STATUS', 'ARIZA HOLATI'],
-  amount:           ['SUMMA', 'AMOUNT', 'TO\'LOV SUMMASI', 'NARX'],
-  paidAmount:       ['TO\'LANGAN', 'TO\'LANGAN SUMMA', 'PAID', 'PAID AMOUNT'],
-  paymentStatus:    ['TO\'LOV HOLATI', 'PAYMENT STATUS', 'TO\'LOV'],
-  paymentDate:      ['TO\'LOV SANASI', 'PAYMENT DATE'],
-  note:             ['IZOH', 'NOTE', 'QAYD']
+  region:           ['Viloyat', 'VILOYAT', 'REGION', 'HUDUD'],
+  district:         ['Tuman', 'TUMAN', 'DISTRICT'],
+  engineer:         ['Ijrochi muhandis', 'MUHANDIS', 'ENGINEER', 'IJROCHI MUHANDIS'],
+  applicationType:  ['Ariza turi', 'ARIZA TURI', 'APPLICATION TYPE', 'Ariza maqsadi'],
+  objectType:       ['Obyekt turi', 'OBYEKT TURI', 'OBJECT TYPE'],
+  serviceCode:      ['Tranzaksiya turi', 'XIZMAT KODI', 'SERVICE CODE'],
+  area:             ['Umumiy yer maydoni', 'MAYDON', 'AREA', 'YUZA'],
+  registerDate:     ['Ariza kelib tushgan sana', 'QABUL SANASI', 'KIRISH SANASI', 'ARIZA SANASI'],
+  deadlineDate:     ['IJRO MUDDATI', 'MUDDAT SANASI', 'DEADLINE'],
+  completeDate:     ['Oxirgi jarayon sana', 'BAJARILGAN SANA', 'TUGATILGAN SANA'],
+  status:           ['Tizimdagi holati', 'HOLAT', 'ARIZA HOLATI', 'STATUS'],
+  paymentDate:      ['To\'langan sana', 'TO\'LOV SANASI', 'PAYMENT DATE'],
+  paymentStatus:    ['To\'lov holati', 'TO\'LOV HOLATI', 'PAYMENT STATUS'],
+  note:             ['Rad etish izohi', 'IZOH', 'NOTE', 'QAYD'],
+
+  // To'lov uchta qismdan iborat — har biri alohida o'qiladi va enrichRow'da yig'iladi.
+  amountCadastre:   ['Kadastr to\'lov summasi'],
+  amountReg:        ['Registratsiya to\'lov summasi'],
+  amountAddr:       ['Manzil to\'lov summasi'],
+  paidCadastre:     ['Kadastr to\'langan summasi'],
+  paidReg:          ['Registratsiya to\'langan summasi'],
+  paidAddr:         ['Manzil to\'langan summasi'],
+
+  // Umumiy zaxira maydonlari (agar yuqoridagilar topilmasa).
+  amount:           ['Jami to\'lov summasi', 'TO\'LOV SUMMASI', 'SUMMA', 'AMOUNT'],
+  paidAmount:       ['Jami to\'langan summa', 'TO\'LANGAN SUMMA', 'PAID AMOUNT']
 };
 
 /** DATA varag'ida ishlatiladigan kanonik ustun tartibi (transformatsiyadan keyin). */
