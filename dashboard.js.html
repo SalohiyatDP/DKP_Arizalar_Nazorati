@@ -308,7 +308,8 @@ Apps.showDetail = function (rowId) {
     row('Turar/Noturar', r.residencyLabel) + row('Qabul sanasi', r.registerDate) +
     row('Muddat', r.deadlineDate) + row('Bajarilgan', r.completeDate) +
     row('Muddat holati', r.deadlineStatusLabel) + row('Qolgan kun', r.remainingDays) +
-    row('SLA', r.slaPercent + '%') + row('Summa', r.amountFmt) +
+    row('To\'lovga chiqarilgan', r.issuedDate) + row('Registrator', r.registrator) +
+    row('Summa', r.amountFmt) +
     row('To\'langan', r.paidFmt) + row('Qarz', r.debtFmt) +
     row('To\'lov holati', r.paymentStatusLabel) + row('Izoh', r.note) +
     '</tbody></table>';
@@ -714,6 +715,109 @@ LogsUI.load = function (type) {
       '</tr></thead><tbody>' + rows.map(function (r) {
         return '<tr>' + cols.map(function (c) { return '<td>' + esc(r[c]) + '</td>'; }).join('') + '</tr>';
       }).join('') + '</tbody>';
+  }).catch(function (e) { App.toast(e.message, 'error'); });
+};
+
+
+/* ============================ ARIZA MUDDATI ========================= */
+var DeadlineUI = {};
+DeadlineUI._data = null;
+
+DeadlineUI.load = function () {
+  App.progress(30);
+  api('apiGetDeadlineSettings', State.token).then(function (d) {
+    App.progress(100);
+    DeadlineUI._data = d;
+    App._setText('dlDefaultDays', d.defaultDays);
+    DeadlineUI._renderRules(d.rules);
+    DeadlineUI._renderHolidays(d.holidays);
+  }).catch(function (e) { App.toast(e.message, 'error'); App.progress(0); });
+};
+
+DeadlineUI._resLabel = function (v) {
+  return v === 'RESIDENTIAL' ? 'Turar joy' : v === 'NON_RESIDENTIAL' ? 'Noturar joy' : 'Barchasi';
+};
+
+DeadlineUI._renderRules = function (list) {
+  var t = document.getElementById('rulesTable');
+  if (!list || !list.length) {
+    t.innerHTML = '<tbody><tr><td><div class="empty-state" style="padding:24px">Qoidalar yo\'q</div></td></tr></tbody>';
+    return;
+  }
+  t.innerHTML = '<thead><tr><th>Ariza turi</th><th>Turi</th><th>Muddat (ish kuni)</th><th></th></tr></thead><tbody>' +
+    list.map(function (r) {
+      return '<tr><td>' + esc(r.name) + '</td><td>' + esc(DeadlineUI._resLabel(r.residency)) +
+        '</td><td><strong>' + r.days + '</strong></td>' +
+        '<td><button class="btn-icon" title="Tahrirlash" onclick="DeadlineUI.editRule(\'' +
+        esc(r.name).replace(/'/g, "\\'") + '\')"><span class="material-icons">edit</span></button>' +
+        '<button class="btn-icon" title="O\'chirish" onclick="DeadlineUI.deleteRule(\'' +
+        esc(r.name).replace(/'/g, "\\'") + '\')"><span class="material-icons" style="color:var(--md-danger)">delete</span></button></td></tr>';
+    }).join('') + '</tbody>';
+};
+
+DeadlineUI.editRule = function (name) {
+  var r = (DeadlineUI._data.rules || []).filter(function (x) { return x.name === name; })[0];
+  if (!r) return;
+  document.getElementById('ruleName').value = r.name;
+  document.getElementById('ruleResidency').value = r.residency || '';
+  document.getElementById('ruleDays').value = r.days;
+  window.scrollTo(0, 0);
+};
+
+DeadlineUI.saveRule = function () {
+  var rule = {
+    name: document.getElementById('ruleName').value.trim(),
+    residency: document.getElementById('ruleResidency').value,
+    days: document.getElementById('ruleDays').value
+  };
+  if (!rule.name || !rule.days) { App.toast('Ariza turi va muddatni kiriting', 'warning'); return; }
+  api('apiSaveDeadlineRule', State.token, State.csrf, rule).then(function () {
+    App.toast('Muddat qoidasi saqlandi', 'success');
+    document.getElementById('ruleName').value = '';
+    document.getElementById('ruleDays').value = '';
+    DeadlineUI.load();
+  }).catch(function (e) { App.toast(e.message, 'error'); });
+};
+
+DeadlineUI.deleteRule = function (name) {
+  if (!confirm('"' + name + '" qoidasini o\'chirasizmi?')) return;
+  api('apiDeleteDeadlineRule', State.token, State.csrf, name).then(function () {
+    App.toast('Qoida o\'chirildi', 'success'); DeadlineUI.load();
+  }).catch(function (e) { App.toast(e.message, 'error'); });
+};
+
+DeadlineUI._renderHolidays = function (list) {
+  var t = document.getElementById('holidaysTable');
+  if (!list || !list.length) {
+    t.innerHTML = '<tbody><tr><td><div class="empty-state" style="padding:24px">Bayram kunlari yo\'q</div></td></tr></tbody>';
+    return;
+  }
+  t.innerHTML = '<thead><tr><th>Sana</th><th>Nomi</th><th></th></tr></thead><tbody>' +
+    list.map(function (h) {
+      return '<tr><td>' + esc(h.dateFmt) + '</td><td>' + esc(h.name) + '</td>' +
+        '<td><button class="btn-icon" title="O\'chirish" onclick="DeadlineUI.deleteHoliday(\'' +
+        esc(h.date) + '\')"><span class="material-icons" style="color:var(--md-danger)">delete</span></button></td></tr>';
+    }).join('') + '</tbody>';
+};
+
+DeadlineUI.addHoliday = function () {
+  var holiday = {
+    date: document.getElementById('holidayDate').value,
+    name: document.getElementById('holidayName').value.trim()
+  };
+  if (!holiday.date) { App.toast('Sanani tanlang', 'warning'); return; }
+  api('apiAddHoliday', State.token, State.csrf, holiday).then(function () {
+    App.toast('Bayram kuni qo\'shildi', 'success');
+    document.getElementById('holidayDate').value = '';
+    document.getElementById('holidayName').value = '';
+    DeadlineUI.load();
+  }).catch(function (e) { App.toast(e.message, 'error'); });
+};
+
+DeadlineUI.deleteHoliday = function (date) {
+  if (!confirm('Bu bayram kunini o\'chirasizmi?')) return;
+  api('apiDeleteHoliday', State.token, State.csrf, date).then(function () {
+    App.toast('Bayram kuni o\'chirildi', 'success'); DeadlineUI.load();
   }).catch(function (e) { App.toast(e.message, 'error'); });
 };
 

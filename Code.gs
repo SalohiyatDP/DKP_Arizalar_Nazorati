@@ -531,3 +531,102 @@ function apiGetSettings(token) {
     return Config.get(true);
   });
 }
+
+/* ========================================================================== */
+/*                            ARIZA MUDDATI (ADMIN)                           */
+/* ========================================================================== */
+
+/**
+ * Muddat qoidalari va bayram kunlarini qaytaradi (admin).
+ * @param {string} token
+ * @returns {Object}
+ */
+function apiGetDeadlineSettings(token) {
+  return _guard(function () {
+    var session = _auth(token);
+    Security.require(session, PERMISSIONS.MANAGE_SETTINGS);
+    return {
+      rules: DeadlineSettings.getRules(),
+      holidays: DeadlineSettings.getHolidays(),
+      defaultDays: DeadlineSettings.getDefaultDays()
+    };
+  });
+}
+
+/**
+ * Muddat qoidasini saqlaydi (qo'shadi/yangilaydi).
+ * @param {string} token
+ * @param {string} csrf
+ * @param {Object} rule {name, residency, days}
+ * @returns {Object}
+ */
+function apiSaveDeadlineRule(token, csrf, rule) {
+  return _guard(function () {
+    var session = _auth(token);
+    _csrf(session, csrf);
+    Security.require(session, PERMISSIONS.MANAGE_SETTINGS);
+    var res = DeadlineSettings.saveRule(rule || {});
+    if (!res.ok) throw new Error(res.error);
+    AppLog.action(ACTION_TYPE.SETTINGS_UPDATE, session.username,
+      'Muddat qoidasi: ' + (rule && rule.name));
+    return res;
+  });
+}
+
+/**
+ * Muddat qoidasini o'chiradi.
+ * @param {string} token
+ * @param {string} csrf
+ * @param {string} name
+ * @returns {Object}
+ */
+function apiDeleteDeadlineRule(token, csrf, name) {
+  return _guard(function () {
+    var session = _auth(token);
+    _csrf(session, csrf);
+    Security.require(session, PERMISSIONS.MANAGE_SETTINGS);
+    var res = DeadlineSettings.deleteRule(name);
+    if (!res.ok) throw new Error(res.error);
+    AppLog.action(ACTION_TYPE.SETTINGS_UPDATE, session.username, 'Muddat qoidasi o\'chirildi: ' + name);
+    return true;
+  });
+}
+
+/**
+ * Bayram kunini qo'shadi.
+ * @param {string} token
+ * @param {string} csrf
+ * @param {Object} holiday {date, name}
+ * @returns {Object}
+ */
+function apiAddHoliday(token, csrf, holiday) {
+  return _guard(function () {
+    var session = _auth(token);
+    _csrf(session, csrf);
+    Security.require(session, PERMISSIONS.MANAGE_SETTINGS);
+    var res = DeadlineSettings.addHoliday(holiday || {});
+    if (!res.ok) throw new Error(res.error);
+    AppLog.action(ACTION_TYPE.SETTINGS_UPDATE, session.username,
+      'Bayram kuni: ' + (holiday && holiday.date));
+    return true;
+  });
+}
+
+/**
+ * Bayram kunini o'chiradi.
+ * @param {string} token
+ * @param {string} csrf
+ * @param {string} date
+ * @returns {Object}
+ */
+function apiDeleteHoliday(token, csrf, date) {
+  return _guard(function () {
+    var session = _auth(token);
+    _csrf(session, csrf);
+    Security.require(session, PERMISSIONS.MANAGE_SETTINGS);
+    var res = DeadlineSettings.deleteHoliday(date);
+    if (!res.ok) throw new Error(res.error);
+    AppLog.action(ACTION_TYPE.SETTINGS_UPDATE, session.username, 'Bayram o\'chirildi: ' + date);
+    return true;
+  });
+}
