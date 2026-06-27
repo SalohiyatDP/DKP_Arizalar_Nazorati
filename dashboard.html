@@ -264,6 +264,22 @@
       <span class="material-icons">restart_alt</span> Standart qiymatlarga qaytarish</button>
   </div>
 
+  <!-- Ariza manbasi filtri -->
+  <div class="card mb-16">
+    <div class="card-title"><span class="material-icons">filter_alt</span> Ariza manbalari (hisobotga kiritiladigan)</div>
+    <p style="color:var(--text-secondary); font-size:13px; margin-bottom:12px;">
+      Faqat shu yerda belgilangan manbaalardan kelgan arizalar hisobot, statistika va moliyaga kiritiladi.
+      Ro'yxat <strong>bo'sh</strong> bo'lsa — <strong>barcha manbalar</strong> kiritiladi.</p>
+    <div class="filters-grid mb-8">
+      <div class="field" style="margin:0;"><label>Manba qo'shish</label>
+        <select class="select" id="srcSelect"><option value="">— manba tanlang —</option></select></div>
+      <div class="field" style="margin:0; align-self:end;">
+        <button class="btn btn-primary btn-block" onclick="DeadlineUI.addSource()">
+          <span class="material-icons">add</span> Qo'shish</button></div>
+    </div>
+    <div id="sourcesList"></div>
+  </div>
+
   <div class="grid charts-grid">
     <!-- Bayram kunlari -->
     <div class="card">

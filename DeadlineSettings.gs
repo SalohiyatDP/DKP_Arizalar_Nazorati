@@ -328,6 +328,93 @@ var DeadlineSettings = (function () {
     return { ok: true };
   }
 
+  /* -------------------- ARIZA MANBASI FILTRI ----------------------------- */
+  // Hisobotga FAQAT shu yerda belgilangan manbaalardan kelgan arizalar kiradi.
+  // Ro'yxat BO'SH bo'lsa — barcha manbalar kiritiladi (filtr o'chiq).
+
+  var SOURCE_HEADERS = ['MANBA'];
+
+  /** ARIZA_MANBASI varag'i mavjudligini ta'minlaydi (bo'sh — filtr o'chiq). */
+  function _ensureSourceSheet() {
+    if (!Repository.exists(SHEETS.SOURCES)) {
+      Repository.ss().insertSheet(SHEETS.SOURCES);
+    }
+    var sh = Repository.sheet(SHEETS.SOURCES, true);
+    if (sh.getLastRow() === 0) {
+      sh.getRange(1, 1, 1, SOURCE_HEADERS.length).setValues([SOURCE_HEADERS]);
+    }
+    return sh;
+  }
+
+  /**
+   * Ruxsat etilgan manbalar ro'yxati.
+   * @returns {Array<string>}
+   */
+  function getAllowedSources() {
+    _ensureSourceSheet();
+    var matrix = Repository.readMatrix(SHEETS.SOURCES);
+    var out = [];
+    for (var r = 1; r < matrix.length; r++) {
+      var name = Utils.str(matrix[r][0]);
+      if (name) out.push(name);
+    }
+    out.sort(function (a, b) { return a.localeCompare(b); });
+    return out;
+  }
+
+  /**
+   * Ruxsat etilgan manbalar to'plami (normallashgan). Ro'yxat bo'sh — null
+   * (ya'ni filtr qo'llanmaydi, barcha manbalar kiritiladi).
+   * @returns {Object<string, boolean>|null}
+   */
+  function getAllowedSourceSet() {
+    var list = getAllowedSources();
+    if (!list.length) return null;
+    var map = {};
+    for (var i = 0; i < list.length; i++) map[Utils.normalize(list[i])] = true;
+    return map;
+  }
+
+  /**
+   * Manbani ruxsat ro'yxatiga qo'shadi.
+   * @param {string} name
+   * @returns {{ok: boolean, error?: string}}
+   */
+  function addSource(name) {
+    name = Utils.str(name);
+    if (!name) return { ok: false, error: 'Manba nomi kiritilmadi.' };
+    var sh = _ensureSourceSheet();
+    var matrix = Repository.readMatrix(SHEETS.SOURCES);
+    var target = Utils.normalize(name);
+    for (var r = 1; r < matrix.length; r++) {
+      if (Utils.normalize(matrix[r][0]) === target) {
+        return { ok: true, exists: true };
+      }
+    }
+    sh.appendRow([name]);
+    _invalidate();
+    return { ok: true };
+  }
+
+  /**
+   * Manbani ruxsat ro'yxatidan o'chiradi.
+   * @param {string} name
+   * @returns {{ok: boolean, error?: string}}
+   */
+  function deleteSource(name) {
+    var sh = _ensureSourceSheet();
+    var matrix = Repository.readMatrix(SHEETS.SOURCES);
+    var target = Utils.normalize(name);
+    for (var r = 1; r < matrix.length; r++) {
+      if (Utils.normalize(matrix[r][0]) === target) {
+        sh.deleteRow(r + 1);
+        _invalidate();
+        return { ok: true };
+      }
+    }
+    return { ok: false, error: 'Manba topilmadi.' };
+  }
+
   /** Standart muddat (ish kuni) — qoidaga mos kelmagan arizalar uchun. */
   function getDefaultDays() {
     return Config.value('defaultDeadlineDays', 10);
@@ -337,6 +424,7 @@ var DeadlineSettings = (function () {
   function _invalidate() {
     BusinessCalendar.invalidate();
     BusinessLogic.invalidate();
+    try { Dashboard.invalidate(); } catch (e) { /* Dashboard hali yuklanmagan bo'lishi mumkin */ }
   }
 
   return {
@@ -351,6 +439,10 @@ var DeadlineSettings = (function () {
     getDeadlineConfigMap: getDeadlineConfigMap,
     saveDeadlineParam: saveDeadlineParam,
     deleteDeadlineParam: deleteDeadlineParam,
-    resetDeadlineConfig: resetDeadlineConfig
+    resetDeadlineConfig: resetDeadlineConfig,
+    getAllowedSources: getAllowedSources,
+    getAllowedSourceSet: getAllowedSourceSet,
+    addSource: addSource,
+    deleteSource: deleteSource
   };
 })();

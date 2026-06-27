@@ -852,6 +852,7 @@ DeadlineUI.load = function () {
     DeadlineUI._data = d;
     App._setText('dlDefaultDays', d.defaultDays);
     DeadlineUI._renderConfig(d.deadlineConfig);
+    DeadlineUI._renderSources(d.sources, d.availableSources);
     DeadlineUI._renderRules(d.rules);
     DeadlineUI._renderHolidays(d.holidays);
   }).catch(function (e) { App.toast(e.message, 'error'); App.progress(0); });
@@ -951,6 +952,49 @@ DeadlineUI.resetConfig = function () {
   if (!confirm('Barcha muddat qoidalarini standart (Excel formulasi) holatiga qaytarasizmi?')) return;
   api('apiResetDeadlineConfig', State.token, State.csrf)
     .then(function () { App.toast('Standart holat tiklandi', 'success'); DeadlineUI.load(); })
+    .catch(function (e) { App.toast(e.message, 'error'); });
+};
+
+/* ---- Ariza manbasi filtri ---- */
+DeadlineUI._allowedSources = [];
+
+DeadlineUI._renderSources = function (allowed, available) {
+  allowed = allowed || []; available = available || [];
+  DeadlineUI._allowedSources = allowed;
+  var allowedNorm = {};
+  allowed.forEach(function (s) { allowedNorm[String(s).toLowerCase()] = true; });
+  var sel = document.getElementById('srcSelect');
+  if (sel) {
+    var opts = available.filter(function (s) { return !allowedNorm[String(s).toLowerCase()]; });
+    sel.innerHTML = '<option value="">— manba tanlang —</option>' +
+      opts.map(function (s) { return '<option value="' + esc(s) + '">' + esc(s) + '</option>'; }).join('');
+  }
+  var box = document.getElementById('sourcesList');
+  if (!box) return;
+  if (!allowed.length) {
+    box.innerHTML = '<div class="empty-state" style="padding:16px">Ro\'yxat bo\'sh — hozir <b>barcha manbalar</b> hisobotga kiritilmoqda.</div>';
+    return;
+  }
+  box.innerHTML = '<div class="flex gap-8 wrap">' + allowed.map(function (s, i) {
+    return '<span class="badge" style="background:var(--md-primary); padding:6px 10px; display:inline-flex; align-items:center; gap:6px; font-size:13px;">' +
+      esc(s) + '<span class="material-icons" style="font-size:16px; cursor:pointer" title="Olib tashlash" onclick="DeadlineUI.deleteSourceByIdx(' + i + ')">close</span></span>';
+  }).join('') + '</div>';
+};
+
+DeadlineUI.addSource = function () {
+  var v = (document.getElementById('srcSelect') || {}).value;
+  if (!v) { App.toast('Manba tanlang', 'warning'); return; }
+  api('apiAddSource', State.token, State.csrf, v)
+    .then(function () { App.toast('Manba qo\'shildi', 'success'); DeadlineUI.load(); })
+    .catch(function (e) { App.toast(e.message, 'error'); });
+};
+
+DeadlineUI.deleteSourceByIdx = function (i) {
+  var name = DeadlineUI._allowedSources[i];
+  if (name == null) return;
+  if (!confirm('"' + name + '" manbasini ro\'yxatdan olib tashlaysizmi?')) return;
+  api('apiDeleteSource', State.token, State.csrf, name)
+    .then(function () { App.toast('Olib tashlandi', 'success'); DeadlineUI.load(); })
     .catch(function (e) { App.toast(e.message, 'error'); });
 };
 

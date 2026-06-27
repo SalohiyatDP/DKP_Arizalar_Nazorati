@@ -22,13 +22,42 @@ var Dashboard = (function () {
    * DATA varag'idagi barcha yozuvlarni obyekt massivi sifatida o'qiydi (keshlanadi).
    * @returns {Array<Object>}
    */
-  function loadAll() {
+  /**
+   * DATA varag'idagi XOM yozuvlar (manba filtrisiz, keshlanadi).
+   * @returns {Array<Object>}
+   */
+  function _loadRaw() {
     return Cache.remember(DATA_CACHE_KEY, function () {
       if (!Repository.exists(SHEETS.DATA)) return [];
       var parsed = Repository.readObjects(SHEETS.DATA);
       // Sarlavhalar DATA_COLUMNS bilan mos kelishini ta'minlash uchun normalizatsiya.
       return parsed.rows.map(_normalizeRecord);
     }, Config.value('cacheTtlSec', 1800));
+  }
+
+  /**
+   * Hisobotga kiritiladigan yozuvlar. Agar ARIZA_MANBASI ro'yxati belgilangan
+   * bo'lsa — FAQAT shu manbaalardan kelgan arizalar qaytadi (aks holda barchasi).
+   * @returns {Array<Object>}
+   */
+  function loadAll() {
+    var rows = _loadRaw();
+    var allowed = null;
+    try { allowed = DeadlineSettings.getAllowedSourceSet(); } catch (e) { allowed = null; }
+    if (!allowed) return rows;
+    return rows.filter(function (r) {
+      return allowed[Utils.normalize(r.applicationSource)] === true;
+    });
+  }
+
+  /** DATA'dagi barcha noyob "Ariza manbasi" qiymatlari (filtrlanmagan) — sozlama UI uchun. */
+  function rawSources() {
+    var rows = _loadRaw();
+    var m = {};
+    for (var i = 0; i < rows.length; i++) {
+      if (rows[i].applicationSource) m[rows[i].applicationSource] = true;
+    }
+    return Object.keys(m).sort();
   }
 
   /**
@@ -51,6 +80,7 @@ var Dashboard = (function () {
       applicationType: Utils.str(r.applicationType),
       objectType: Utils.str(r.objectType),
       serviceCode: Utils.str(r.serviceCode),
+      applicationSource: Utils.str(r.applicationSource),
       lastProcessRole: Utils.str(r.lastProcessRole),
       lastProcessName: Utils.str(r.lastProcessName),
       residency: Utils.str(r.residency),
@@ -504,6 +534,7 @@ var Dashboard = (function () {
 
   return {
     loadAll: loadAll,
+    rawSources: rawSources,
     scopeFor: scopeFor,
     applyFilters: applyFilters,
     scopedRows: scopedRows,
